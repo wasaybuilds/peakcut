@@ -18,7 +18,7 @@
   --ink-mute: #958d81; /* 5.6:1 on felt */
   --bulb: #ffb43d;
   --bulb-dim: #3a3127;
-  --fail: #ef5a5f;
+  --fail: #e5484d; /* 4.9:1 on felt */
   --posted: #7fd6a1;
   --radius: 4px;
 }
@@ -161,6 +161,13 @@ select {
   }
   .btn-primary:hover:not(:disabled) {
     background: #fffaf1;
+  }
+  /* a waiting primary reads as "not yet", not broken: ruled outline, muted label, no fill */
+  .btn-primary:disabled {
+    opacity: 1;
+    background: transparent;
+    color: var(--ink-mute);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
   }
   .btn-line {
     border: 1px solid var(--line-strong);

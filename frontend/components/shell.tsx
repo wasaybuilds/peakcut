@@ -18,7 +18,17 @@ export function Wordmark({ className = "" }: { className?: string }) {
 }
 
 function JobRow({ job, active }: { job: Job; active: boolean }) {
-  const live = job.status === "running" || job.status === "queued";
+  const running = job.status === "running";
+  const n = job.clip_count;
+  const label = running
+    ? `${Math.round(job.progress * 100)}%`
+    : job.status === "queued"
+      ? "QUEUED"
+      : job.status === "failed"
+        ? "FAILED"
+        : n === undefined
+          ? "DONE" // older API without clip counts
+          : `${n} ${n === 1 ? "CLIP" : "CLIPS"}`;
   return (
     <Link
       href={`/jobs/${job.id}`}
@@ -29,11 +39,12 @@ function JobRow({ job, active }: { job: Job; active: boolean }) {
     >
       <span className="min-w-0 truncate text-[16px] leading-snug">{cleanTitle(job.title) || "Fetching title…"}</span>
       <span
-        className={`tabular shrink-0 text-[13px] font-semibold tracking-[0.08em] ${
-          live ? "text-bulb" : job.status === "failed" ? "text-fail" : "text-ink-mute"
+        className={`tabular inline-flex shrink-0 items-center gap-1.5 text-[13px] font-semibold tracking-[0.08em] ${
+          running ? "text-bulb" : job.status === "failed" ? "text-fail" : "text-ink-mute"
         }`}
       >
-        {job.status === "running" ? `${Math.round(job.progress * 100)}%` : job.status === "queued" ? "QUEUED" : job.status === "failed" ? "FAILED" : "DONE"}
+        {running && <span className="bulb bulb-on bulb-head w-2" aria-hidden />}
+        {label}
       </span>
     </Link>
   );

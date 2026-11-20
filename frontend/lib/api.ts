@@ -26,6 +26,7 @@ export type Job = {
   progress: number;
   error: string | null;
   created_at: string;
+  clip_count?: number; // only on the jobs list
   options: {
     clip_count?: number;
     layout?: string;
