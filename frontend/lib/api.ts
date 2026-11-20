@@ -65,7 +65,10 @@ export type Clip = {
 
 export type Platform = "youtube" | "instagram";
 
+export type Cover = { path: string; at: number; text: string };
+
 export type ClipMeta = {
+  cover?: Cover | null;
   hashtags?: string[];
   youtube?: { title: string; description: string; tags?: string[]; privacy?: "public" | "unlisted" | "private" };
   instagram?: { caption: string };
@@ -97,6 +100,8 @@ export const saveClipMeta = (
   clipId: number,
   body: { youtube: { title: string; description: string; privacy: string }; instagram: { caption: string }; hashtags: string[] },
 ) => req<ClipMeta>(`/api/clips/${clipId}/meta`, { method: "PUT", body: JSON.stringify(body) });
+export const makeCover = (clipId: number, body: { at?: number; text?: string } = {}) =>
+  req<Cover>(`/api/clips/${clipId}/cover`, { method: "POST", body: JSON.stringify(body) });
 export const publishClip = (clipId: number, platforms: Platform[]) =>
   req<{ ok: boolean; queued: number[] }>(`/api/clips/${clipId}/publish`, { method: "POST", body: JSON.stringify({ platforms }) });
 

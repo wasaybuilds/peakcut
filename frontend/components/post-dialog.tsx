@@ -5,6 +5,7 @@ import { LoaderCircle, Send, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { CoverEditor } from "@/components/cover-editor";
 import { cleanTitle } from "@/components/marquee";
 import {
   type Accounts,
@@ -43,6 +44,7 @@ export function PostDialog({
   const [targets, setTargets] = useState<Record<Platform, boolean>>({ youtube: true, instagram: true });
   const [busy, setBusy] = useState<null | "ai" | "post">(null);
   const [err, setErr] = useState<string | null>(null);
+  const [side, setSide] = useState<"clip" | "cover">("clip");
 
   function load(meta: ClipMeta) {
     setTitle(meta.youtube?.title ?? clip.title);
@@ -158,11 +160,35 @@ export function PostDialog({
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             className="grid max-h-[94dvh] w-full max-w-4xl overflow-y-auto rounded-t-board border border-line-strong bg-felt-raised outline-none sm:rounded-board md:grid-cols-[260px_1fr]"
           >
-            <div className="hidden border-r border-line bg-felt p-4 md:block">
-              {clip.file_path && (
-                <video src={fileUrl(clip.file_path)} poster={clip.thumb_path ? fileUrl(clip.thumb_path) : undefined} controls playsInline className="aspect-[9/16] w-full rounded-board bg-felt-high object-cover" />
+            <div className="border-b border-line bg-felt p-4 md:border-b-0 md:border-r">
+              <div role="tablist" aria-label="Preview" className="mb-3 grid grid-cols-2 rounded-board border border-line-strong p-0.5">
+                {(["clip", "cover"] as const).map((t) => (
+                  <button
+                    key={t}
+                    role="tab"
+                    aria-selected={side === t}
+                    onClick={() => setSide(t)}
+                    className={`h-8 rounded-board text-[13px] font-bold uppercase tracking-[0.1em] transition-colors ${side === t ? "bg-ink text-felt" : "text-ink-soft hover:text-ink"}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              {side === "clip" ? (
+                <div className="mx-auto max-w-[220px] md:max-w-none">
+                  {clip.file_path && (
+                    <video src={fileUrl(clip.file_path)} poster={clip.thumb_path ? fileUrl(clip.thumb_path) : undefined} controls playsInline className="aspect-[9/16] w-full rounded-board bg-felt-high object-cover" />
+                  )}
+                  <p className="mt-3 text-[15px] leading-snug text-ink-soft">{cleanTitle(clip.title)}</p>
+                </div>
+              ) : (
+                <div className="mx-auto max-w-[220px] md:max-w-none">
+                  <CoverEditor clip={clip} />
+                  <p className="mt-3 text-[13px] leading-snug text-ink-mute">
+                    Posting from the Instagram app: Edit cover, then Add from camera roll. Auto-posting uses this frame as the cover.
+                  </p>
+                </div>
               )}
-              <p className="mt-3 text-[15px] leading-snug text-ink-soft">{cleanTitle(clip.title)}</p>
             </div>
 
             <div className="p-5 sm:p-6">

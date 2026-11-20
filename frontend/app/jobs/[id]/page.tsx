@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Download, Play, RotateCcw, ScanFace, Send, Sparkles } from "lucide-react";
+import { Check, Copy, Download, ImageDown, Play, RotateCcw, ScanFace, Send, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useRef, useState } from "react";
 
@@ -253,6 +253,11 @@ function ClipCard({ clip, onChanged, rendering }: { clip: Clip; onChanged: () =>
         {clip.file_path && (
           <a href={fileUrl(clip.file_path)} download aria-label="Download clip" title="Download" className="btn btn-line btn-sm px-2.5">
             <Download className="size-4" strokeWidth={1.75} />
+          </a>
+        )}
+        {clip.meta?.cover?.path && (
+          <a href={fileUrl(clip.meta.cover.path)} download aria-label="Download cover image" title="Download cover" className="btn btn-line btn-sm px-2.5">
+            <ImageDown className="size-4" strokeWidth={1.75} />
           </a>
         )}
         <button
