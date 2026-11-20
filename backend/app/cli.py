@@ -13,7 +13,7 @@ from app.worker import run_job
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="clip-kr: YouTube link -> viral 9:16 clips")
+    ap = argparse.ArgumentParser(description="PeakCut: YouTube link -> viral 9:16 clips")
     ap.add_argument("url")
     ap.add_argument("--count", type=int, default=get_settings().default_clip_count)
     ap.add_argument("--layout", default="zoom_fill", choices=["zoom_fill", "blur_fill", "center_crop"])

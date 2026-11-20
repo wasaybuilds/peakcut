@@ -84,7 +84,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
             <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-accent to-accent-2">
               <Scissors className="size-3.5" />
             </span>
-            clip-kr
+            PeakCut
           </div>
         </div>
       </header>

@@ -1,7 +1,7 @@
 [project]
-name = "clip-kr-backend"
+name = "peakcut-backend"
 version = "0.1.0"
-description = "clip-kr API + clipping pipeline"
+description = "PeakCut API + clipping pipeline"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115",

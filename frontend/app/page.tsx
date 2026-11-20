@@ -56,7 +56,7 @@ export default function Home() {
           <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-accent to-accent-2">
             <Scissors className="size-4" />
           </span>
-          clip-kr
+          PeakCut
         </div>
         <div className="flex items-center gap-4">
           <Link href="/settings" className="text-sm text-muted transition-colors hover:text-foreground">

@@ -67,7 +67,7 @@ class Settings(BaseSettings):
 
     @property
     def db_path(self) -> Path:
-        return self.data_dir / "clip-kr.db"
+        return self.data_dir / "peakcut.db"
 
     def ensure_dirs(self) -> None:
         for d in (self.downloads_dir, self.cache_dir, self.renders_dir):

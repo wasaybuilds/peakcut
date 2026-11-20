@@ -1,4 +1,4 @@
-# clip-kr
+# PeakCut
 
 Paste a YouTube link → AI finds the best moments → get 9:16 clips with animated captions → post them to YouTube Shorts and Instagram Reels.
 

@@ -1,4 +1,4 @@
-# One-time setup for clip-kr on Windows.  Run from the repo root:
+# One-time setup for PeakCut on Windows.  Run from the repo root:
 #   powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
