@@ -37,12 +37,13 @@ def youtube_disconnect():
 
 class IGToken(BaseModel):
     access_token: str = Field(min_length=20)
+    account_id: str | None = Field(default=None, max_length=40)  # only needed if lookup fails (EAA tokens)
 
 
 @router.post("/accounts/instagram")
 def instagram_connect(body: IGToken):
     try:
-        data = instagram.connect(body.access_token)
+        data = instagram.connect(body.access_token, body.account_id)
     except Exception as e:
         raise HTTPException(400, str(e)) from e
     return {"ok": True, "username": data.get("username")}
