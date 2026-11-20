@@ -1,0 +1,41 @@
+# secrets: API keys, OAuth/Instagram tokens, YouTube cookies
+.env
+.env.*
+!.env.example
+*.secret.json
+client_secret*.json
+*cookies*.txt
+*.pem
+*.key
+*.p12
+backend/tokens/
+.claude/
+
+# logs
+*.log
+npm-debug.log*
+
+# data (downloads, caches, renders)
+data/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.db
+*.db-journal
+
+# node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
