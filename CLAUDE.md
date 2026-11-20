@@ -25,6 +25,7 @@ backend/tokens/       gitignored: OAuth client, YouTube/Instagram tokens, youtub
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1   # one-time install
 powershell -File scripts\dev.ps1                             # API :8000 + web :3000
+powershell -File scripts\dev.ps1 -Phone                      # web also on the LAN (phones); API stays localhost
 
 cd backend
 uv run python -m pytest -q                 # tests
@@ -43,6 +44,10 @@ The dev machine enforces Smart App Control, which blocks:
 
 - uv-managed Pythons and uv's `.exe` launchers. The venv is built on the signed python.org 3.13 and tools always run as `python -m <tool>`, never `pytest` / `uvicorn` directly.
 - native wheels from very new releases. `backend/pyproject.toml` pins known-good versions in `[tool.uv] constraint-dependencies` (pydantic-core, jiter, sqlalchemy, opencv-python-headless). After adding a dependency, test-import it; if it is blocked, pin an older release.
+
+## Networking
+
+The browser only talks to Next on :3000. `frontend/next.config.ts` rewrites `/api/*`, `/files/*` and `/health` to FastAPI on 127.0.0.1:8000, so the frontend uses same-origin URLs (`API_URL = ""`) and the API never needs to listen beyond localhost. `allowedDevOrigins` is computed from the machine's LAN IPs. There is no auth: never expose :3000 publicly.
 
 ## Pipeline rules
 

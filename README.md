@@ -35,6 +35,12 @@ Each AI step tries the next provider when one fails or hits a rate limit, so a s
    - The API runs at http://localhost:8000/health
    - The web app runs at http://localhost:3000
 
+### Use it from your phone
+
+Run `powershell -File scripts\dev.ps1 -Phone`. It prints an address like `http://192.168.x.x:3000`; open that on a phone connected to the same Wi-Fi. The phone uses the laptop's data, clips and accounts, because the web app forwards every API and video request to the backend on the laptop. The backend itself stays private to the laptop.
+
+Anyone on the same Wi-Fi can open that address, so only use `-Phone` on a network you trust. Don't expose port 3000 to the internet. For access away from home, use a private network like Tailscale.
+
 ### Smart App Control (Windows 11)
 
 Smart App Control is turned on for this PC. It blocks two kinds of files:
