@@ -56,7 +56,8 @@ The dev machine enforces Smart App Control, which blocks:
 
 - Marquee Letterboard: felt black shell, letter-white ink, Big Shoulders (one family, optical sizes).
 - Colour does one job each: amber `--bulb` = live progress, red `--fail` = failure, green `--posted` = posted. Nothing else gets colour.
-- One radius (`--radius`, 4px), one-pixel rules. Component classes (`.btn`, `.field`, `.tile`) live in `@layer components` so utilities can override them.
+- Radius: 4px (`--radius`) for every UI surface, 2px for physical plates (letter tiles, score plate), full circles only for bulbs, marks and the play button. One-pixel rules. Component classes (`.btn`, `.field`, `.tile`) live in `@layer components` so utilities can override them.
+- Never hard-code a colour: add a token in `globals.css` first. The full token set and named rules are in [DESIGN.md](DESIGN.md) and `.impeccable/design.json`.
 - No eyebrow labels above headings, no em-dashes in any visible text, icons from lucide only, every state (loading, empty, error, disabled) designed.
 
 ## Repo hygiene
