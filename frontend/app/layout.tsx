@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Big_Shoulders } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+import { Shell } from "@/components/shell";
+
+// One condensed family; the optical-size axis carries both letterboard titles and UI text.
+const shoulders = Big_Shoulders({ variable: "--font-shoulders", subsets: ["latin"], axes: ["opsz"] });
 
 export const metadata: Metadata = {
   title: "PeakCut",
-  description: "Turn long YouTube videos into viral Shorts and Reels with free AI.",
+  description: "Turn long YouTube videos into ready-to-post Shorts and Reels with free AI.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+    <html lang="en" className={shoulders.variable}>
+      <body>
+        <Shell>{children}</Shell>
+      </body>
     </html>
   );
 }

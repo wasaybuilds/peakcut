@@ -1,43 +1,314 @@
 @import "tailwindcss";
 
+/*
+  PeakCut: Marquee Letterboard.
+  Felt black shell, letter-white ink. Colour does one job each:
+  amber = live progress, red = failure, green = posted.
+  One radius (4px), one-device-pixel rules.
+*/
 :root {
-  --background: #07070a;
-  --surface: #101016;
-  --surface-2: #17171f;
-  --border: #23232d;
-  --foreground: #ededf2;
-  --muted: #8b8b99;
-  --accent: #ff3d6e; /* neon pink */
-  --accent-2: #7c5cff; /* violet */
-  --ok: #3ddc97;
-  --warn: #ffb547;
+  --felt: #0d0c0b;
+  --felt-raised: #141210;
+  --felt-high: #1c1a17;
+  --groove: #090807;
+  --line: #2a2724;
+  --line-strong: #3d3933;
+  --ink: #f4efe6;
+  --ink-soft: #c9c1b4;
+  --ink-mute: #958d81; /* 5.6:1 on felt */
+  --bulb: #ffb43d;
+  --bulb-dim: #3a3127;
+  --fail: #ef5a5f;
+  --posted: #7fd6a1;
+  --radius: 4px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-border: var(--border);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-accent: var(--accent);
-  --color-accent-2: var(--accent-2);
-  --color-ok: var(--ok);
-  --color-warn: var(--warn);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-felt: var(--felt);
+  --color-felt-raised: var(--felt-raised);
+  --color-felt-high: var(--felt-high);
+  --color-groove: var(--groove);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-mute: var(--ink-mute);
+  --color-bulb: var(--bulb);
+  --color-bulb-dim: var(--bulb-dim);
+  --color-fail: var(--fail);
+  --color-posted: var(--posted);
+  --radius-board: var(--radius);
+  --font-sans: var(--font-shoulders), "Arial Narrow", sans-serif;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html {
   color-scheme: dark;
+  background: var(--felt);
+  scrollbar-color: var(--line-strong) var(--felt);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--felt);
+  color: var(--ink);
+  font-family: var(--font-shoulders), "Arial Narrow", sans-serif;
+  font-optical-sizing: auto;
+  font-size: 17px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--accent) 40%, transparent);
+  background: var(--bulb);
+  color: var(--felt);
+}
+
+:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+
+input,
+textarea,
+select {
+  caret-color: var(--bulb);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--felt);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: var(--radius);
+  border: 2px solid var(--felt);
+}
+
+/* Component classes live in the components layer so Tailwind utilities (w-*, h-*, flex-1) can override them. */
+@layer components {
+  /* Grooved felt: the letterboard's ground. Only on the title board. */
+  .felt-grooves {
+    background-color: var(--felt-raised);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 7px,
+      var(--groove) 7px,
+      var(--groove) 9px
+    );
+  }
+
+  /* A push-in letter tile. */
+  .tile {
+    display: inline-block;
+    background: var(--ink);
+    color: var(--felt);
+    border-radius: 2px;
+    padding: 0.02em 0.22em 0.04em;
+    line-height: 1;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    box-shadow: 0 2px 0 var(--groove), 0 3px 6px rgb(0 0 0 / 0.35);
+  }
+
+  .label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Buttons: one radius, letter-white primary, ruled secondary. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.5rem;
+    padding: 0 1rem;
+    border-radius: var(--radius);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition:
+      background-color 0.18s var(--ease-out-expo),
+      color 0.18s var(--ease-out-expo),
+      border-color 0.18s var(--ease-out-expo),
+      transform 0.12s var(--ease-out-expo);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--felt);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #fffaf1;
+  }
+  .btn-line {
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+  }
+  .btn-line:hover:not(:disabled) {
+    border-color: var(--ink-soft);
+    background: var(--felt-high);
+  }
+  .btn-sm {
+    height: 2rem;
+    padding: 0 0.75rem;
+    font-size: 13px;
+  }
+
+  .field {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.75rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--line-strong);
+    background: var(--groove);
+    color: var(--ink);
+    padding: 0.6rem 0.9rem;
+    font-size: 17px;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    transition:
+      border-color 0.18s var(--ease-out-expo),
+      box-shadow 0.18s var(--ease-out-expo);
+  }
+  .field::placeholder {
+    color: var(--ink-mute);
+  }
+  .field:hover:not(:disabled) {
+    border-color: #57514a;
+  }
+  .field:focus,
+  .field:focus-visible {
+    outline: none;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgb(244 239 230 / 0.14);
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--fail);
+  }
+  select.field {
+    appearance: none;
+    padding-right: 2.4rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath stroke='%23c9c1b4' stroke-width='1.6' d='m1 1.5 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+  }
+  textarea.field {
+    line-height: 1.5;
+  }
+}
+
+/* Letter tiles push in once per title. */
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35em) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tile-in {
+  animation: tile-in 0.42s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 32ms);
+}
+
+/* Marquee bulbs: the signature move. */
+.bulb {
+  /* shrink to fit narrow screens instead of running off the board */
+  flex: 0 1 11px;
+  min-width: 5px;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  transition: background-color 0.4s var(--ease-out-expo);
+}
+.bulb-off {
+  background: var(--bulb-dim);
+}
+.bulb-on {
+  background: radial-gradient(circle at 40% 35%, #fff3d6 0 18%, var(--bulb) 55%, #c9821c 100%);
+  box-shadow: 0 0 6px 1px rgb(255 180 61 / 0.45);
+}
+.bulb-done {
+  background: radial-gradient(circle at 40% 35%, #ffffff 0 20%, var(--ink) 60%, #bfb7aa 100%);
+}
+.bulb-fail {
+  background: var(--fail);
+}
+/* a brighter pulse runs along the lit bulbs while a job works */
+@keyframes bulb-chase {
+  0%,
+  100% {
+    filter: brightness(0.82);
+  }
+  12% {
+    filter: brightness(1.35);
+  }
+}
+.bulb-chase {
+  animation: bulb-chase 1.6s linear infinite;
+  animation-delay: calc(var(--i) * 50ms);
+}
+@keyframes bulb-head {
+  50% {
+    transform: scale(1.25);
+  }
+}
+.bulb-head {
+  animation: bulb-head 0.9s var(--ease-out-expo) infinite;
+}
+
+/* Post-state marks in fixed cells. */
+.mark {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  flex: none;
+}
+.mark-none {
+  border: 1.5px solid var(--line-strong);
+}
+.mark-working {
+  border: 1.5px solid var(--bulb);
+  animation: bulb-head 1.2s ease-in-out infinite;
+}
+.mark-posted {
+  background: var(--posted);
+}
+.mark-failed {
+  border: 1.5px solid var(--fail);
+  background: linear-gradient(45deg, transparent 42%, var(--fail) 42% 58%, transparent 58%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
