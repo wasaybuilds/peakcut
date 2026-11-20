@@ -19,7 +19,19 @@ import {
 } from "@/lib/api";
 
 /** Edit the post text for one clip and send it to YouTube / Instagram. */
-export function PostDialog({ clip, open, onClose, onPosted }: { clip: Clip; open: boolean; onClose: () => void; onPosted: () => void }) {
+export function PostDialog({
+  clip,
+  open,
+  onClose,
+  onPosted,
+  returnFocus,
+}: {
+  clip: Clip;
+  open: boolean;
+  onClose: () => void;
+  onPosted: () => void;
+  returnFocus?: React.RefObject<HTMLElement | null>;
+}) {
   const reduce = useReducedMotion();
   const panel = useRef<HTMLDivElement>(null);
   const [accounts, setAccounts] = useState<Accounts | null>(null);
@@ -55,11 +67,37 @@ export function PostDialog({ clip, open, onClose, onPosted }: { clip: Clip; open
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, clip.id]);
 
+  // Escape closes; Tab stays inside the dialog (aria-modal promises that).
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    if (open) window.addEventListener("keydown", onKey);
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return onClose();
+      if (e.key !== "Tab" || !panel.current) return;
+      const items = Array.from(
+        panel.current.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select, textarea, video[controls], [tabindex]:not([tabindex="-1"])'),
+      );
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === panel.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // Give focus back to whatever opened the dialog.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (wasOpen.current && !open) returnFocus?.current?.focus();
+    wasOpen.current = open;
+  }, [open, returnFocus]);
 
   async function rewrite() {
     setBusy("ai");
