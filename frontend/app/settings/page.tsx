@@ -10,6 +10,7 @@ export default function SettingsPage() {
   const [acc, setAcc] = useState<Accounts | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [igToken, setIgToken] = useState("");
+  const [igId, setIgId] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
   const refresh = useCallback(() => getAccounts().then(setAcc).catch((e) => setErr(e.message)), []);
@@ -118,15 +119,24 @@ export default function SettingsPage() {
                 <b>Manage messaging and content on Instagram</b>. No Facebook Page is needed.
               </li>
               <li>
-                In the app, open Instagram, then <b>API setup with Instagram login</b>, and add your Instagram account.
+                Newer apps use <b>API setup with Unified login</b>: create a business portfolio, give your Instagram account the Instagram Tester role
+                under App roles, create a configuration in step 1, then add your account and generate a token in step 2.
               </li>
-              <li>Click Generate token next to your account and paste it below. It lasts 60 days and PeakCut refreshes it for you.</li>
+              <li>
+                Paste the token below. Tokens starting with EAA never expire; older IGAA tokens last 60 days and PeakCut refreshes them for you. If
+                PeakCut asks for it, also paste the account ID shown under your username.
+              </li>
             </Steps>
             <form
-              className="mt-5 flex flex-col gap-2 sm:flex-row"
+              className="mt-5 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]"
               onSubmit={(e) => {
                 e.preventDefault();
-                act("ig", () => connectInstagram(igToken).then(() => setIgToken("")));
+                act("ig", () =>
+                  connectInstagram(igToken, igId).then(() => {
+                    setIgToken("");
+                    setIgId("");
+                  }),
+                );
               }}
             >
               <label htmlFor="ig-token" className="sr-only">
@@ -136,10 +146,22 @@ export default function SettingsPage() {
                 id="ig-token"
                 value={igToken}
                 onChange={(e) => setIgToken(e.target.value)}
-                placeholder="IGAA..."
+                placeholder="EAA... or IGAA..."
                 type="password"
                 autoComplete="off"
-                className="field h-11 flex-1"
+                className="field h-11 w-full sm:col-span-2"
+              />
+              <label htmlFor="ig-id" className="sr-only">
+                Instagram account ID, optional
+              </label>
+              <input
+                id="ig-id"
+                value={igId}
+                onChange={(e) => setIgId(e.target.value.replace(/\D/g, ""))}
+                placeholder="Account ID (optional)"
+                inputMode="numeric"
+                autoComplete="off"
+                className="field h-11 w-full"
               />
               <button type="submit" disabled={igToken.trim().length < 20 || busy !== null} className="btn btn-primary h-11">
                 {busy === "ig" && <LoaderCircle className="size-4 animate-spin" />} Connect Instagram

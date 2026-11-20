@@ -92,8 +92,11 @@ export type Accounts = {
 export const getAccounts = () => req<Accounts>("/api/accounts");
 export const connectYouTube = () => req<{ ok: boolean; message: string }>("/api/accounts/youtube/connect", { method: "POST" });
 export const disconnectYouTube = () => req<{ ok: boolean }>("/api/accounts/youtube", { method: "DELETE" });
-export const connectInstagram = (access_token: string) =>
-  req<{ ok: boolean; username: string }>("/api/accounts/instagram", { method: "POST", body: JSON.stringify({ access_token }) });
+export const connectInstagram = (access_token: string, account_id?: string) =>
+  req<{ ok: boolean; username: string }>("/api/accounts/instagram", {
+    method: "POST",
+    body: JSON.stringify({ access_token, account_id: account_id?.trim() || null }),
+  });
 export const disconnectInstagram = () => req<{ ok: boolean }>("/api/accounts/instagram", { method: "DELETE" });
 
 export const writeJobCaptions = (jobId: number) => req<{ ok: boolean }>(`/api/jobs/${jobId}/captions`, { method: "POST" });
