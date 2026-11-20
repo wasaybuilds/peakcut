@@ -7,7 +7,12 @@ Connecting opens a Google sign-in page in the browser on this computer, once.
 import json
 import logging
 import threading
+import time
+import webbrowser
+import wsgiref.simple_server
+import wsgiref.util
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 from app.config import ROOT_DIR, get_settings
 
@@ -20,8 +25,10 @@ SCOPES = [
 TOKEN = ROOT_DIR / "backend" / "tokens" / "youtube_token.json"
 GAMING_CATEGORY = "20"
 
+CONNECT_TIMEOUT = 600  # seconds to finish signing in before the attempt is dropped
+
 _connect_lock = threading.Lock()
-_connect_state = {"running": False, "error": None}
+_connect_state = {"running": False, "error": None, "auth_url": None}
 
 
 def client_secret_path() -> Path:
@@ -70,31 +77,78 @@ def status() -> dict:
     return out
 
 
+class _QuietHandler(wsgiref.simple_server.WSGIRequestHandler):
+    timeout = 10  # an idle connection (browser preconnect) can't hold the listener forever
+
+    def log_message(self, *args):
+        pass
+
+
+def _wait_for_redirect(server, deadline: float) -> str:
+    """Serve the local redirect until Google sends back a code or an error."""
+    result: dict[str, str] = {}
+
+    def app(environ, start_response):
+        query = parse_qs(environ.get("QUERY_STRING", ""))
+        if "code" in query or "error" in query:
+            result["uri"] = wsgiref.util.request_uri(environ)
+            body = b"PeakCut is connected to YouTube. You can close this tab."
+            if "error" in query:
+                body = b"Sign-in was cancelled. Go back to PeakCut and click Connect YouTube to try again."
+        else:
+            body = b"Waiting for Google sign-in."
+        start_response("200 OK", [("Content-Type", "text/plain; charset=utf-8")])
+        return [body]
+
+    server.set_app(app)
+    server.timeout = 1
+    while "uri" not in result:
+        if time.time() > deadline:
+            raise RuntimeError("Sign-in took too long. Click Connect YouTube to try again.")
+        server.handle_request()
+    return result["uri"]
+
+
 def start_connect() -> None:
-    """Open Google's sign-in page in the browser (runs in a background thread)."""
+    """Open Google's sign-in page in the browser; the redirect is caught in a background thread.
+
+    Clicking again while a sign-in is waiting reopens the same page, so a blocked or closed tab
+    (for example "Access blocked" before you were added as a test user) can simply be retried.
+    """
     if not client_secret_path().exists():
         raise RuntimeError(f"Put your OAuth client JSON at {client_secret_path()} first.")
+    if _connect_state["running"]:
+        if _connect_state["auth_url"]:
+            webbrowser.open(_connect_state["auth_url"], new=1)
+        return
+
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    flow = InstalledAppFlow.from_client_secrets_file(str(client_secret_path()), SCOPES)
+    server = wsgiref.simple_server.make_server("localhost", 0, lambda e, r: [], handler_class=_QuietHandler)
+    flow.redirect_uri = f"http://localhost:{server.server_port}/"
+    auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
+    _connect_state.update(running=True, error=None, auth_url=auth_url)
 
     def run():
-        from google_auth_oauthlib.flow import InstalledAppFlow
-
         with _connect_lock:
-            _connect_state.update(running=True, error=None)
             try:
-                flow = InstalledAppFlow.from_client_secrets_file(str(client_secret_path()), SCOPES)
-                creds = flow.run_local_server(
-                    port=0, open_browser=True, access_type="offline", prompt="consent", timeout_seconds=300
-                )
+                uri = _wait_for_redirect(server, time.time() + CONNECT_TIMEOUT)
+                error = parse_qs(urlparse(uri).query).get("error")
+                if error:
+                    raise RuntimeError(f"Google sign-in was not completed ({error[0]}).")
+                flow.fetch_token(authorization_response=uri.replace("http://", "https://", 1))  # oauthlib wants https
                 TOKEN.parent.mkdir(parents=True, exist_ok=True)
-                TOKEN.write_text(creds.to_json(), encoding="utf-8")
+                TOKEN.write_text(flow.credentials.to_json(), encoding="utf-8")
             except Exception as e:
                 log.warning("YouTube connect failed: %s", e)
                 _connect_state["error"] = str(e)[:300]
             finally:
-                _connect_state["running"] = False
+                server.server_close()
+                _connect_state.update(running=False, auth_url=None)
 
-    if not _connect_state["running"]:
-        threading.Thread(target=run, daemon=True, name="youtube-oauth").start()
+    threading.Thread(target=run, daemon=True, name="youtube-oauth").start()
+    webbrowser.open(auth_url, new=1)
 
 
 def disconnect() -> None:
