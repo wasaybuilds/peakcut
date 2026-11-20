@@ -1,9 +1,9 @@
 "use client";
 
-import { ArrowLeft, CircleCheck, ExternalLink, LoaderCircle, Unplug } from "lucide-react";
-import Link from "next/link";
+import { Check, ExternalLink, LoaderCircle, Unplug } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { LetterTitle } from "@/components/marquee";
 import { type Accounts, connectInstagram, connectYouTube, disconnectInstagram, disconnectYouTube, getAccounts } from "@/lib/api";
 
 export default function SettingsPage() {
@@ -17,7 +17,7 @@ export default function SettingsPage() {
     refresh();
   }, [refresh]);
 
-  // poll while the Google sign-in window is open
+  // poll while the Google sign-in tab is open
   useEffect(() => {
     if (!acc?.youtube.connecting) return;
     const t = setInterval(refresh, 2000);
@@ -41,144 +41,163 @@ export default function SettingsPage() {
   const ig = acc?.instagram;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-3xl px-4 pb-24 sm:px-6">
-      <header className="py-5">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted transition-colors hover:text-foreground">
-          <ArrowLeft className="size-4" /> Home
-        </Link>
-      </header>
-      <h1 className="text-2xl font-semibold tracking-tight">Accounts</h1>
-      <p className="mt-1 text-sm text-muted">Connect where clips get posted. Both use the official free APIs.</p>
-      {err && <p className="mt-4 rounded-lg border border-warn/30 bg-warn/5 px-3 py-2 text-sm text-warn">{err}</p>}
+    <div className="mx-auto max-w-[980px] px-4 pb-24 pt-6 sm:px-8 lg:pt-10">
+      <section className="felt-grooves rounded-board border border-line px-5 pb-6 pt-7 sm:px-8">
+        <LetterTitle text="Accounts" />
+        <p className="mt-5 max-w-[62ch] text-[18px] text-ink-soft">
+          Connect where your clips get posted. Both use the official free APIs, and your tokens stay on this computer.
+        </p>
+      </section>
+      {err && <p className="mt-4 text-[15px] text-fail">{err}</p>}
 
-      {/* YouTube */}
-      <section className="mt-8 rounded-2xl border border-border bg-surface p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="font-medium">YouTube Shorts</h2>
-            <p className="text-sm text-muted">
-              {yt?.connected ? (
-                <span className="inline-flex items-center gap-1.5 text-ok">
-                  <CircleCheck className="size-4" /> {yt.channel}
-                </span>
-              ) : yt?.client_secret ? (
-                "Ready to connect"
-              ) : (
-                "Setup needed (steps below)"
-              )}
-            </p>
-          </div>
-          {yt?.connected ? (
-            <button onClick={() => act("yt-off", disconnectYouTube)} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm">
-              <Unplug className="size-4" /> Disconnect
+      <Account
+        name="YouTube Shorts"
+        status={yt?.connected ? yt.channel : yt?.client_secret ? "Ready to connect" : "Needs a Google Cloud client first"}
+        connected={!!yt?.connected}
+        error={yt?.error}
+        action={
+          yt?.connected ? (
+            <button onClick={() => act("yt-off", disconnectYouTube)} className="btn btn-line btn-sm">
+              <Unplug className="size-4" strokeWidth={1.75} /> Disconnect
             </button>
           ) : (
-            <button
-              disabled={!yt?.client_secret || yt?.connecting || busy !== null}
-              onClick={() => act("yt", connectYouTube)}
-              className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background active:scale-[0.97] disabled:opacity-40"
-            >
-              {yt?.connecting ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {yt?.connecting ? "Finish in the browser tab…" : "Connect YouTube"}
+            <button disabled={!yt?.client_secret || yt?.connecting || busy !== null} onClick={() => act("yt", connectYouTube)} className="btn btn-primary">
+              {yt?.connecting && <LoaderCircle className="size-4 animate-spin" />}
+              {yt?.connecting ? "Finish in your browser" : "Connect YouTube"}
             </button>
-          )}
-        </div>
-        {yt?.error && <p className="mt-3 text-xs text-warn">{yt.error}</p>}
+          )
+        }
+      >
         {!yt?.connected && (
-          <ol className="mt-4 list-decimal space-y-1.5 pl-5 text-sm text-muted">
+          <Steps>
             <li>
-              Open{" "}
-              <A href="https://console.cloud.google.com/projectcreate">Google Cloud Console</A> and create a project (any name).
+              Create a project in <A href="https://console.cloud.google.com/projectcreate">Google Cloud Console</A>. Any name works.
             </li>
             <li>
-              Enable <A href="https://console.cloud.google.com/apis/library/youtube.googleapis.com">YouTube Data API v3</A>.
+              Turn on the <A href="https://console.cloud.google.com/apis/library/youtube.googleapis.com">YouTube Data API v3</A>.
             </li>
             <li>
-              <A href="https://console.cloud.google.com/auth/branding">Google Auth Platform</A> → Get started: app name, your email, Audience
-              <b className="text-foreground"> External</b>. Then under Audience click <b className="text-foreground">Publish app</b> (so the login
-              doesn&apos;t expire every 7 days).
+              Open <A href="https://console.cloud.google.com/auth/branding">Google Auth Platform</A>, click Get started, pick audience <b>External</b>, then
+              click <b>Publish app</b> so the sign-in doesn&apos;t expire every 7 days.
             </li>
             <li>
-              <A href="https://console.cloud.google.com/auth/clients">Clients</A> → Create client → type <b className="text-foreground">Desktop app</b> →
-              Download JSON.
+              Under <A href="https://console.cloud.google.com/auth/clients">Clients</A>, create a <b>Desktop app</b> client and download its JSON.
             </li>
             <li>
-              Save it as <code className="rounded bg-surface-2 px-1 font-mono text-xs text-foreground">backend\tokens\client_secret.json</code>, refresh
-              this page and click Connect YouTube. Google will warn &quot;app isn&apos;t verified&quot; (it&apos;s your own app): click Advanced → Go to
-              app.
+              Save it as <code className="rounded-[2px] bg-felt-high px-1.5 py-0.5 text-[15px] text-ink">backend\tokens\client_secret.json</code>, reload this
+              page and click Connect YouTube. Google warns the app isn&apos;t verified because it&apos;s your own: choose Advanced, then Go to app.
             </li>
-          </ol>
+          </Steps>
         )}
-      </section>
+        <p className="mt-4 text-[15px] leading-snug text-ink-mute">
+          Until Google approves its free API audit, uploads from a new project stay private. Post publicly from YouTube Studio in the meantime.
+        </p>
+      </Account>
 
-      {/* Instagram */}
-      <section className="mt-5 rounded-2xl border border-border bg-surface p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="font-medium">Instagram Reels</h2>
-            <p className="text-sm text-muted">
-              {ig?.connected ? (
-                <span className="inline-flex items-center gap-1.5 text-ok">
-                  <CircleCheck className="size-4" /> @{ig.username}
-                </span>
-              ) : (
-                "Paste an access token (steps below)"
-              )}
-            </p>
-          </div>
-          {ig?.connected && (
-            <button onClick={() => act("ig-off", disconnectInstagram)} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm">
-              <Unplug className="size-4" /> Disconnect
+      <Account
+        name="Instagram Reels"
+        status={ig?.connected ? `@${ig.username}` : "Paste an access token"}
+        connected={!!ig?.connected}
+        error={ig?.error}
+        action={
+          ig?.connected ? (
+            <button onClick={() => act("ig-off", disconnectInstagram)} className="btn btn-line btn-sm">
+              <Unplug className="size-4" strokeWidth={1.75} /> Disconnect
             </button>
-          )}
-        </div>
-        {ig?.error && <p className="mt-3 text-xs text-warn">{ig.error}</p>}
+          ) : null
+        }
+      >
         {!ig?.connected && (
           <>
-            <ol className="mt-4 list-decimal space-y-1.5 pl-5 text-sm text-muted">
+            <Steps>
               <li>
-                In the Instagram app: Settings → Account type and tools → <b className="text-foreground">Switch to professional account</b> (Creator).
-                Free.
+                In the Instagram app, open Settings, then Account type and tools, and <b>switch to a professional (Creator) account</b>. It&apos;s free.
               </li>
               <li>
-                Go to <A href="https://developers.facebook.com/apps">Meta for Developers</A>, log in with Facebook and create an app with the use case{" "}
-                <b className="text-foreground">Manage messaging &amp; content on Instagram</b>.
+                Log in to <A href="https://developers.facebook.com/apps">Meta for Developers</A> with any Facebook account and create an app with the use case{" "}
+                <b>Manage messaging and content on Instagram</b>. No Facebook Page is needed.
               </li>
               <li>
-                In the app: Instagram → <b className="text-foreground">API setup with Instagram login</b> → Generate access tokens → Add account → log in
-                with your Instagram.
+                In the app, open Instagram, then <b>API setup with Instagram login</b>, and add your Instagram account.
               </li>
-              <li>Click Generate token next to your account, copy it and paste it here.</li>
-            </ol>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <li>Click Generate token next to your account and paste it below. It lasts 60 days and PeakCut refreshes it for you.</li>
+            </Steps>
+            <form
+              className="mt-5 flex flex-col gap-2 sm:flex-row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                act("ig", () => connectInstagram(igToken).then(() => setIgToken("")));
+              }}
+            >
+              <label htmlFor="ig-token" className="sr-only">
+                Instagram access token
+              </label>
               <input
+                id="ig-token"
                 value={igToken}
                 onChange={(e) => setIgToken(e.target.value)}
-                placeholder="IGAA…"
+                placeholder="IGAA..."
                 type="password"
                 autoComplete="off"
-                className="h-10 flex-1 rounded-lg border border-border bg-surface-2 px-3 text-sm outline-none focus:border-muted"
+                className="field h-11 flex-1"
               />
-              <button
-                disabled={igToken.trim().length < 20 || busy !== null}
-                onClick={() => act("ig", () => connectInstagram(igToken).then(() => setIgToken("")))}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-foreground px-4 text-sm font-medium text-background active:scale-[0.97] disabled:opacity-40"
-              >
-                {busy === "ig" ? <LoaderCircle className="size-4 animate-spin" /> : null} Connect
+              <button type="submit" disabled={igToken.trim().length < 20 || busy !== null} className="btn btn-primary h-11">
+                {busy === "ig" && <LoaderCircle className="size-4 animate-spin" />} Connect Instagram
               </button>
-            </div>
+            </form>
           </>
         )}
-      </section>
-    </main>
+      </Account>
+    </div>
+  );
+}
+
+function Account({
+  name,
+  status,
+  connected,
+  error,
+  action,
+  children,
+}: {
+  name: string;
+  status: string | null | undefined;
+  connected: boolean;
+  error?: string | null;
+  action: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section className="mt-6 rounded-board border border-line bg-felt-raised px-5 py-5 sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-[24px] font-bold uppercase leading-none tracking-[0.04em]">{name}</h2>
+          <p className={`mt-1.5 inline-flex items-center gap-1.5 text-[16px] ${connected ? "text-ink" : "text-ink-mute"}`}>
+            {connected && <Check className="size-4" strokeWidth={2.25} />}
+            {status}
+          </p>
+        </div>
+        {action}
+      </div>
+      {error && <p className="mt-3 text-[15px] text-fail">{error}</p>}
+      {children}
+    </section>
+  );
+}
+
+function Steps({ children }: { children: React.ReactNode }) {
+  return (
+    <ol className="mt-5 list-decimal space-y-2 border-t border-line pl-5 pt-5 text-[16px] leading-relaxed text-ink-soft marker:font-bold marker:text-ink-mute [&_b]:font-bold [&_b]:text-ink">
+      {children}
+    </ol>
   );
 }
 
 function A({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-foreground underline decoration-border underline-offset-2 hover:decoration-foreground">
+    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink">
       {children}
-      <ExternalLink className="size-3" />
+      <ExternalLink className="size-3.5" strokeWidth={1.75} />
     </a>
   );
 }
