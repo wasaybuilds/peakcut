@@ -1,24 +1,18 @@
 "use client";
 
-import { Crosshair, ScanFace } from "lucide-react";
+import { Crosshair, ScanFace, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { type Box, fileUrl, type Job, LAYOUTS, rerenderJob } from "@/lib/api";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-/** Switch a finished job's layout, drag/resize the face cam box, and re-render. */
-export function LayoutPanel({ job, onQueued }: { job: Job; onQueued: () => void }) {
-  const current = job.options?.layout ?? "zoom_fill";
-  const detected = job.options?.facecam ?? null;
-  const frame = job.options?.facecam_frame;
-  const [box, setBox] = useState<Box | null>(detected);
+type Rerender = Parameters<typeof rerenderJob>[1];
+
+function useRerender(job: Job, onQueued: () => void) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-
-  useEffect(() => setBox(detected), [detected?.x, detected?.y, detected?.w, detected?.h]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function go(body: Parameters<typeof rerenderJob>[1]) {
+  async function go(body: Rerender) {
     setBusy(true);
     setErr(null);
     try {
@@ -30,67 +24,85 @@ export function LayoutPanel({ job, onQueued }: { job: Job; onQueued: () => void 
       setBusy(false);
     }
   }
+  return { busy, err, go };
+}
+
+/** Segmented layout control for the clips toolbar. Switching re-renders every clip. */
+export function LayoutSwitch({ job, disabled, onQueued }: { job: Job; disabled?: boolean; onQueued: () => void }) {
+  const current = job.options?.layout ?? "zoom_fill";
+  const { busy, err, go } = useRerender(job, onQueued);
+  return (
+    <div className="flex flex-col gap-1">
+      <div role="radiogroup" aria-label="Layout (re-renders every clip)" className="grid grid-cols-2 rounded-board border border-line-strong p-0.5 sm:flex">
+        {LAYOUTS.map((l) => {
+          const on = l.id === current;
+          return (
+            <button
+              key={l.id}
+              role="radio"
+              aria-checked={on}
+              title={`${l.hint}. Re-renders every clip.`}
+              disabled={disabled || busy || on}
+              onClick={() => go({ layout: l.id })}
+              className={`h-8 rounded-board px-3 text-[13px] font-bold uppercase tracking-[0.1em] transition-colors disabled:cursor-default ${
+                on ? "bg-ink text-felt" : "text-ink-soft hover:text-ink disabled:text-ink-mute"
+              }`}
+            >
+              {l.label}
+            </button>
+          );
+        })}
+      </div>
+      {err && <p className="text-[14px] text-fail">{err}</p>}
+    </div>
+  );
+}
+
+/** Disclosure panel: drag/resize the face cam box over a frame, then re-render. */
+export function FacecamEditor({ job, onClose, onQueued }: { job: Job; onClose: () => void; onQueued: () => void }) {
+  const detected = job.options?.facecam ?? null;
+  const frame = job.options?.facecam_frame;
+  const [box, setBox] = useState<Box | null>(detected);
+  const { busy, err, go } = useRerender(job, onQueued);
+
+  useEffect(() => setBox(detected), [detected?.x, detected?.y, detected?.w, detected?.h]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const changed = !!box && JSON.stringify(box) !== JSON.stringify(detected);
-  const hint = LAYOUTS.find((l) => l.id === current)?.hint;
 
   return (
-    <section className="mt-6 rounded-board border border-line bg-felt-raised px-5 py-4 sm:px-6" aria-labelledby="layout-h">
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <div>
-          <h2 id="layout-h" className="text-[18px] font-bold uppercase tracking-[0.08em]">
-            Layout
-          </h2>
-          <p className="text-[15px] text-ink-mute">{hint}. Changing it re-renders every clip.</p>
-        </div>
-        <div role="radiogroup" aria-label="Layout" className="grid w-full grid-cols-2 rounded-board border border-line-strong p-0.5 sm:flex sm:w-auto">
-          {LAYOUTS.map((l) => {
-            const on = l.id === current;
-            return (
-              <button
-                key={l.id}
-                role="radio"
-                aria-checked={on}
-                title={l.hint}
-                disabled={busy || on}
-                onClick={() => go({ layout: l.id })}
-                className={`h-9 rounded-[3px] px-3.5 text-[14px] font-bold uppercase tracking-[0.1em] transition-colors disabled:cursor-default ${
-                  on ? "bg-ink text-felt" : "text-ink-soft hover:text-ink"
-                }`}
-              >
-                {l.label}
-              </button>
-            );
-          })}
-        </div>
+    <section id="facecam-editor" className="mt-4 rounded-board border border-line bg-felt-raised p-4 sm:p-5" aria-labelledby="facecam-h">
+      <div className="flex items-start justify-between gap-4">
+        <h3 id="facecam-h" className="text-[18px] font-bold uppercase tracking-[0.08em]">
+          Adjust face cam
+        </h3>
+        <button onClick={onClose} aria-label="Close face cam editor" className="btn btn-line btn-sm px-2">
+          <X className="size-4" strokeWidth={2} />
+        </button>
       </div>
-
-      {current === "facecam_split" && (
-        <div className="mt-5 grid gap-5 border-t border-line pt-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
-          {frame ? (
-            <BoxEditor src={fileUrl(frame)} box={box ?? { x: 0.02, y: 0.55, w: 0.22, h: 0.3 }} onChange={setBox} />
-          ) : (
-            <p className="text-[15px] text-ink-soft">The face cam is found while rendering. Its position shows up here when that finishes.</p>
-          )}
-          {frame && (
-            <div>
-              <p className="text-[16px] leading-snug text-ink-soft">
-                {detected
-                  ? "This box becomes the top panel. Drag it onto the webcam, or resize it from the corner."
-                  : "No webcam was found automatically. Drag the box onto it to use the face cam layout."}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button disabled={busy || !changed} onClick={() => box && go({ layout: "facecam_split", facecam: box })} className="btn btn-primary btn-sm">
-                  <Crosshair className="size-4" strokeWidth={1.75} /> Use this box
-                </button>
-                <button disabled={busy} onClick={() => go({ layout: "facecam_split", redetect: true })} className="btn btn-line btn-sm">
-                  <ScanFace className="size-4" strokeWidth={1.75} /> Detect again
-                </button>
-              </div>
+      <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+        {frame ? (
+          <BoxEditor src={fileUrl(frame)} box={box ?? { x: 0.02, y: 0.55, w: 0.22, h: 0.3 }} onChange={setBox} />
+        ) : (
+          <p className="text-[15px] text-ink-soft">The face cam is found while rendering. Its position shows up here when that finishes.</p>
+        )}
+        {frame && (
+          <div>
+            <p className="text-[16px] leading-snug text-ink-soft">
+              {detected
+                ? "This box becomes the top panel. Drag it onto the webcam, or resize it from the corner. Arrow keys work too."
+                : "No webcam was found automatically. Drag the box onto it to use the face cam layout."}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button disabled={busy || !changed} onClick={() => box && go({ layout: "facecam_split", facecam: box })} className="btn btn-primary btn-sm">
+                <Crosshair className="size-4" strokeWidth={1.75} /> Use this box
+              </button>
+              <button disabled={busy} onClick={() => go({ layout: "facecam_split", redetect: true })} className="btn btn-line btn-sm">
+                <ScanFace className="size-4" strokeWidth={1.75} /> Detect again
+              </button>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
       {err && <p className="mt-3 text-[15px] text-fail">{err}</p>}
     </section>
   );
@@ -121,7 +133,7 @@ function BoxEditor({ src, box, onChange }: { src: string; box: Box; onChange: (b
     );
   }
 
-  // Arrow keys nudge the box (Shift = resize) so it's usable without a mouse.
+  // Arrow keys nudge the box (Shift = resize, Alt = fine steps) so it works without a mouse.
   function key(e: React.KeyboardEvent) {
     const step = e.altKey ? 0.002 : 0.01;
     const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
@@ -152,11 +164,7 @@ function BoxEditor({ src, box, onChange }: { src: string; box: Box; onChange: (b
         style={{ left: `${box.x * 100}%`, top: `${box.y * 100}%`, width: `${box.w * 100}%`, height: `${box.h * 100}%` }}
       >
         <span className="tile absolute -top-7 left-0 whitespace-nowrap text-[13px]">Face cam</span>
-        <span
-          onPointerDown={(e) => down(e, "resize")}
-          className="absolute -bottom-2 -right-2 size-4 cursor-nwse-resize touch-none rounded-[2px] border-2 border-felt bg-ink"
-          aria-hidden
-        />
+        <span onPointerDown={(e) => down(e, "resize")} className="absolute -bottom-2 -right-2 size-4 cursor-nwse-resize touch-none rounded-[2px] border-2 border-felt bg-ink" aria-hidden />
       </div>
     </div>
   );
