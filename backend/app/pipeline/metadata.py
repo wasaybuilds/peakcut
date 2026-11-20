@@ -51,7 +51,7 @@ def compose(title: str, ig_caption: str, tags: list[str], creator: str, source_u
         "hashtags": tags,
         "youtube": {
             "title": f"{title} #shorts"[:100],
-            "description": f"{ig_caption}\n\n🎥 Credit: {creator} — {source_url}\n\n{' '.join(yt_tags)}"[:5000],
+            "description": f"{ig_caption}\n\n🎥 Credit: {creator} - {source_url}\n\n{' '.join(yt_tags)}"[:5000],
             "tags": [t.lstrip("#") for t in tags],
             "privacy": privacy,
         },
