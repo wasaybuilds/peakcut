@@ -18,6 +18,9 @@ from app.llm.providers import PROVIDERS
 from app.publish import publisher
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+# httpx logs every request URL at INFO, and Meta's API takes the access token as a query parameter.
+for noisy in ("httpx", "httpcore"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
 @asynccontextmanager
