@@ -1,4 +1,6 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Same-origin by default: next.config.ts forwards /api, /files and /health to the backend,
+// so the app works from a phone on the same Wi-Fi. Set NEXT_PUBLIC_API_URL to bypass the proxy.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export type ProviderStatus = {
   label: string;
