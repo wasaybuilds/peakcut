@@ -100,7 +100,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* desktop: rail */}
-      <aside className="sticky top-0 hidden h-[100dvh] flex-col border-r border-line bg-[#100f0d] px-4 py-6 lg:flex">
+      <aside className="sticky top-0 hidden h-[100dvh] flex-col border-r border-line bg-felt-rail px-4 py-6 lg:flex">
         <Wordmark className="px-1" />
         <Link href="/" className="btn btn-line mt-7 w-full">
           <Plus className="size-4" strokeWidth={2} /> New video

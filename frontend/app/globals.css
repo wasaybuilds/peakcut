@@ -8,6 +8,7 @@
 */
 :root {
   --felt: #0d0c0b;
+  --felt-rail: #100f0d; /* desktop job rail, between felt and raised */
   --felt-raised: #141210;
   --felt-high: #1c1a17;
   --groove: #090807;
@@ -25,6 +26,7 @@
 
 @theme inline {
   --color-felt: var(--felt);
+  --color-felt-rail: var(--felt-rail);
   --color-felt-raised: var(--felt-raised);
   --color-felt-high: var(--felt-high);
   --color-groove: var(--groove);
