@@ -1,0 +1,46 @@
+[project]
+name = "clip-kr-backend"
+version = "0.1.0"
+description = "clip-kr API + clipping pipeline"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "faster-whisper>=1.2.1",
+    "google-api-python-client>=2.202.0",
+    "google-auth-oauthlib>=1.5.0",
+    "google-genai>=1.20",
+    "groq>=0.30",
+    "httpx>=0.28.1",
+    "openai>=1.90",
+    "opencv-python-headless==4.11.0.86",
+    "pydantic-settings>=2.9",
+    "python-multipart>=0.0.20",
+    "sqlmodel>=0.0.24",
+    "uvicorn[standard]>=0.34",
+    "yt-dlp[default]>=2026.10.26",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.12"]
+
+[tool.uv]
+package = false
+# Windows Smart App Control blocks native DLLs from brand-new wheels (no reputation yet).
+# Pin to widely-used builds. Re-test before bumping: `uv run python -c "import pydantic_core, jiter"`.
+constraint-dependencies = [
+    "pydantic<2.12",
+    "pydantic-core==2.33.2",
+    "jiter==0.10.0",
+    "sqlalchemy<2.1",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["B008", "E501"]  # FastAPI Depends() in defaults is intended; line length left to the formatter
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
