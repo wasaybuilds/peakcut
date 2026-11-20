@@ -1,0 +1,471 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-20T02:53:39.149Z",
+  "title": "Design System: PeakCut",
+  "extensions": {
+    "colorMeta": {
+      "felt": {
+        "role": "neutral",
+        "displayName": "Felt",
+        "canonical": "#0d0c0b",
+        "purpose": "Page ground, score plate, unselected option cards.",
+        "tonalRamp": [
+          "#272625",
+          "#464341",
+          "#66615b",
+          "#887e73",
+          "#a39b93",
+          "#bcb8b4",
+          "#d6d5d4",
+          "#f3f2f2"
+        ]
+      },
+      "felt-raised": {
+        "role": "neutral",
+        "displayName": "Raised Felt",
+        "canonical": "#141210",
+        "purpose": "Title board ground, panels, dialog.",
+        "tonalRamp": [
+          "#282625",
+          "#464340",
+          "#686159",
+          "#8b7e70",
+          "#a59b90",
+          "#bdb8b3",
+          "#d7d5d3",
+          "#f3f2f2"
+        ]
+      },
+      "felt-high": {
+        "role": "neutral",
+        "displayName": "High Felt",
+        "canonical": "#1c1a17",
+        "purpose": "Active rows, selected options, line-button hover.",
+        "tonalRamp": [
+          "#282725",
+          "#464441",
+          "#67625a",
+          "#8a8072",
+          "#a49d92",
+          "#bcb9b3",
+          "#d7d5d4",
+          "#f3f2f2"
+        ]
+      },
+      "groove": {
+        "role": "neutral",
+        "displayName": "Groove",
+        "canonical": "#090807",
+        "purpose": "Felt stripes, field wells, tile under-edge.",
+        "tonalRamp": [
+          "#282625",
+          "#474340",
+          "#696158",
+          "#8d7e6e",
+          "#a69b8f",
+          "#beb8b2",
+          "#d7d5d3",
+          "#f3f2f2"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#2a2724",
+        "purpose": "Default one-pixel borders and dividers.",
+        "tonalRamp": [
+          "#272625",
+          "#464341",
+          "#66615b",
+          "#877e74",
+          "#a29b94",
+          "#bbb8b4",
+          "#d6d5d4",
+          "#f3f2f2"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong Rule",
+        "canonical": "#3d3933",
+        "purpose": "Button and field outlines, hollow marks.",
+        "tonalRamp": [
+          "#272625",
+          "#464441",
+          "#67625b",
+          "#898073",
+          "#a39c92",
+          "#bcb9b4",
+          "#d6d5d4",
+          "#f3f2f2"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Letter White",
+        "canonical": "#f4efe6",
+        "purpose": "Primary actions, tiles, text, focus.",
+        "tonalRamp": [
+          "#2b2821",
+          "#4e4639",
+          "#7b6846",
+          "#ae8b4e",
+          "#bfa577",
+          "#cabda6",
+          "#dbd7cf",
+          "#f4f3f1"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "#c9c1b4",
+        "purpose": "Secondary text and ledes.",
+        "tonalRamp": [
+          "#282724",
+          "#48443f",
+          "#6b6356",
+          "#92826a",
+          "#aa9e8c",
+          "#bfbab0",
+          "#d8d6d3",
+          "#f3f2f2"
+        ]
+      },
+      "ink-mute": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#958d81",
+        "purpose": "Labels, metadata, placeholders (5.6:1 on felt).",
+        "tonalRamp": [
+          "#272625",
+          "#464441",
+          "#66625b",
+          "#888073",
+          "#a39c93",
+          "#bcb9b4",
+          "#d6d5d4",
+          "#f3f2f2"
+        ]
+      },
+      "bulb": {
+        "role": "secondary",
+        "displayName": "Marquee Bulb Amber",
+        "canonical": "#ffb43d",
+        "purpose": "Live progress only; caret, selection, wordmark Cut tile.",
+        "tonalRamp": [
+          "#342919",
+          "#5f4a28",
+          "#a4701d",
+          "#f99a02",
+          "#f8b03d",
+          "#e6c28a",
+          "#e4d9c6",
+          "#f7f3ee"
+        ]
+      },
+      "bulb-dim": {
+        "role": "secondary",
+        "displayName": "Unlit Bulb",
+        "canonical": "#3a3127",
+        "purpose": "Bulbs not yet reached.",
+        "tonalRamp": [
+          "#292624",
+          "#49443e",
+          "#6e6153",
+          "#967f66",
+          "#ad9c89",
+          "#c1b8af",
+          "#d8d5d2",
+          "#f3f2f1"
+        ]
+      },
+      "fail": {
+        "role": "tertiary",
+        "displayName": "Stop Red",
+        "canonical": "#e5484d",
+        "purpose": "Failure only (4.9:1 on felt).",
+        "tonalRamp": [
+          "#301c1d",
+          "#582f30",
+          "#932e31",
+          "#da2127",
+          "#e15559",
+          "#da9598",
+          "#e0caca",
+          "#f6efef"
+        ]
+      },
+      "posted": {
+        "role": "tertiary",
+        "displayName": "Posted Green",
+        "canonical": "#7fd6a1",
+        "purpose": "Posted state only.",
+        "tonalRamp": [
+          "#1f2d25",
+          "#355240",
+          "#3e8359",
+          "#3ebd70",
+          "#6bcb90",
+          "#a0d0b3",
+          "#cdddd3",
+          "#f0f5f2"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Letterboard Display",
+        "purpose": "Page title set as letter tiles, one per page. Medium size clamp(22px, 2.4vw, 30px)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Uppercase section heads, 24-28px."
+      },
+      "title": {
+        "displayName": "Clip Title",
+        "purpose": "Sentence-case clip titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading text; ledes 18px at 60-62ch."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Metadata, help text, clip reasons."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Uppercase control text; 13px on small buttons."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase muted form legends and list labels."
+      },
+      "score": {
+        "displayName": "Score",
+        "purpose": "Tabular viral score on the score plate."
+      }
+    },
+    "shadows": [
+      {
+        "name": "tile-press",
+        "value": "0 2px 0 var(--groove), 0 3px 6px rgb(0 0 0 / 0.35)",
+        "purpose": "Letter tiles seated in the felt."
+      },
+      {
+        "name": "over-video",
+        "value": "0 2px 8px rgb(0 0 0 / 0.45)",
+        "purpose": "Score plate over thumbnails."
+      },
+      {
+        "name": "over-video-lg",
+        "value": "0 4px 14px rgb(0 0 0 / 0.45)",
+        "purpose": "Play button over thumbnails."
+      },
+      {
+        "name": "bulb-glow",
+        "value": "0 0 6px 1px rgb(255 180 61 / 0.45)",
+        "purpose": "Lit bulbs only."
+      },
+      {
+        "name": "field-focus",
+        "value": "0 0 0 3px rgb(244 239 230 / 0.14)",
+        "purpose": "Focused field halo."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "All transitions and entrances."
+      },
+      {
+        "name": "control",
+        "value": "180ms (press 120ms)",
+        "purpose": "Button and field colour, border and press transitions."
+      },
+      {
+        "name": "tile-in",
+        "value": "420ms ease-out-expo, 32ms stagger per tile, once per title",
+        "purpose": "Letter tiles push in."
+      },
+      {
+        "name": "bulb-chase",
+        "value": "1.6s linear infinite, 50ms per bulb",
+        "purpose": "Brightness pulse along lit bulbs while running."
+      },
+      {
+        "name": "bulb-head",
+        "value": "0.9s ease-out-expo infinite (marks 1.2s ease-in-out)",
+        "purpose": "Head bulb and working mark swell."
+      },
+      {
+        "name": "dialog-rise",
+        "value": "320ms, y 28px to 0, fade backdrop 180ms",
+        "purpose": "Post dialog entrance; fade only under reduced motion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation and transition duration 0.01ms",
+        "purpose": "Applied globally under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Letter-white fill for the one main action in a group.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z\"/><path d=\"m21.854 2.147-10.94 10.939\"/></svg> Post</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:4px;font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;font-weight:700;font-size:15px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;cursor:pointer;transition:background-color .18s cubic-bezier(0.16, 1, 0.3, 1),color .18s cubic-bezier(0.16, 1, 0.3, 1),border-color .18s cubic-bezier(0.16, 1, 0.3, 1),transform .12s cubic-bezier(0.16, 1, 0.3, 1);border:none;background:var(--ink, #f4efe6);color:var(--felt, #0d0c0b);}.ds-btn-primary:hover{background:#fffaf1;}.ds-btn-primary:active{transform:translateY(1px);}.ds-btn-primary:focus-visible{outline:1px solid var(--ink, #f4efe6);outline-offset:3px;}"
+    },
+    {
+      "name": "Waiting Primary",
+      "kind": "button",
+      "refersTo": "button-primary-disabled",
+      "description": "A disabled primary reads as not yet: ruled outline, muted label, no fill.",
+      "html": "<button class=\"ds-btn-wait\" disabled>Find clips</button>",
+      "css": ".ds-btn-wait{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:4px;font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;font-weight:700;font-size:15px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;cursor:pointer;transition:background-color .18s cubic-bezier(0.16, 1, 0.3, 1),color .18s cubic-bezier(0.16, 1, 0.3, 1),border-color .18s cubic-bezier(0.16, 1, 0.3, 1),transform .12s cubic-bezier(0.16, 1, 0.3, 1);border:none;background:transparent;color:var(--ink-mute, #958d81);box-shadow:inset 0 0 0 1px var(--line-strong, #3d3933);cursor:not-allowed;}"
+    },
+    {
+      "name": "Line Button",
+      "kind": "button",
+      "refersTo": "button-line",
+      "description": "Ruled secondary action; also the icon-only button.",
+      "html": "<button class=\"ds-btn-line\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg> New video</button>",
+      "css": ".ds-btn-line{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:4px;font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;font-weight:700;font-size:15px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;cursor:pointer;transition:background-color .18s cubic-bezier(0.16, 1, 0.3, 1),color .18s cubic-bezier(0.16, 1, 0.3, 1),border-color .18s cubic-bezier(0.16, 1, 0.3, 1),transform .12s cubic-bezier(0.16, 1, 0.3, 1);background:transparent;color:var(--ink, #f4efe6);border:1px solid var(--line-strong, #3d3933);}.ds-btn-line:hover{border-color:var(--ink-soft, #c9c1b4);background:var(--felt-high, #1c1a17);}.ds-btn-line:active{transform:translateY(1px);}.ds-btn-line:focus-visible{outline:1px solid var(--ink, #f4efe6);outline-offset:3px;}"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Groove-dark well with a strong rule; ink border and faint halo on focus, red when invalid.",
+      "html": "<label class=\"ds-label\" for=\"ds-url\">Video link</label><input id=\"ds-url\" class=\"ds-field\" placeholder=\"https://www.youtube.com/watch?v=...\">",
+      "css": ".ds-label{display:block;margin-bottom:8px;font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;font-size:13px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-mute, #958d81);}.ds-field{width:100%;min-height:44px;border-radius:4px;border:1px solid var(--line-strong, #3d3933);background:var(--groove, #090807);color:var(--ink, #f4efe6);caret-color:var(--bulb, #ffb43d);padding:10px 14px;font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;font-size:17px;letter-spacing:0.01em;transition:border-color .18s cubic-bezier(0.16, 1, 0.3, 1),box-shadow .18s cubic-bezier(0.16, 1, 0.3, 1);}.ds-field::placeholder{color:var(--ink-mute, #958d81);}.ds-field:hover{border-color:#57514a;}.ds-field:focus{outline:none;border-color:var(--ink, #f4efe6);box-shadow:0 0 0 3px rgb(244 239 230 / 0.14);}.ds-field[aria-invalid=\"true\"]{border-color:var(--fail, #e5484d);}"
+    },
+    {
+      "name": "Segmented Layout Control",
+      "kind": "chip",
+      "refersTo": "segmented-option-on",
+      "description": "Strong-rule frame; the selected option fills ink.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\"><button role=\"radio\" aria-checked=\"false\">Zoom</button><button role=\"radio\" aria-checked=\"true\">Face cam</button><button role=\"radio\" aria-checked=\"false\">Full frame</button><button role=\"radio\" aria-checked=\"false\">Fill</button></div>",
+      "css": ".ds-seg{display:inline-flex;padding:2px;border:1px solid var(--line-strong, #3d3933);border-radius:4px;}.ds-seg button{height:32px;padding:0 12px;border:none;border-radius:4px;background:transparent;color:var(--ink-soft, #c9c1b4);font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:color .18s cubic-bezier(0.16, 1, 0.3, 1);}.ds-seg button:hover{color:var(--ink, #f4efe6);}.ds-seg button[aria-checked=\"true\"]{background:var(--ink, #f4efe6);color:var(--felt, #0d0c0b);}.ds-seg button:focus-visible{outline:1px solid var(--ink, #f4efe6);outline-offset:3px;}"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-row-active",
+      "description": "Job rows with right-aligned tabular status; amber only while live.",
+      "html": "<nav class=\"ds-rail\"><p class=\"ds-rail-label\">Jobs</p><a href=\"#\" class=\"ds-row\"><span>GTA 6 Platinum Walkthrough</span><span class=\"ds-stat ds-live\"><i class=\"ds-dot\"></i>83%</span></a><a href=\"#\" class=\"ds-row\" aria-current=\"page\"><span>Playing GTA 6 early access</span><span class=\"ds-stat\">6 clips</span></a><a href=\"#\" class=\"ds-row\"><span>Grand Theft Auto VI Trailer 1</span><span class=\"ds-stat ds-failed\">Failed</span></a></nav>",
+      "css": ".ds-rail{width:256px;padding:16px;background:var(--felt, #0d0c0b);font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;}.ds-rail-label{margin:0;padding:0 12px 8px;font-size:13px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-mute, #958d81);}.ds-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-radius:4px;color:var(--ink-soft, #c9c1b4);text-decoration:none;font-size:16px;transition:background-color .18s,color .18s;}.ds-row span:first-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}.ds-row:hover{background:var(--felt-raised, #141210);color:var(--ink, #f4efe6);}.ds-row[aria-current=\"page\"]{background:var(--felt-high, #1c1a17);color:var(--ink, #f4efe6);}.ds-row:focus-visible{outline:1px solid var(--ink, #f4efe6);outline-offset:3px;}.ds-stat{display:inline-flex;align-items:center;gap:6px;flex:none;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--ink-mute, #958d81);}.ds-live{color:var(--bulb, #ffb43d);}.ds-failed{color:var(--fail, #e5484d);}.ds-dot{width:8px;height:8px;border-radius:999px;background:var(--bulb, #ffb43d);box-shadow:0 0 6px 1px rgb(255 180 61 / 0.45);}"
+    },
+    {
+      "name": "Title Board",
+      "kind": "card",
+      "refersTo": "title-board",
+      "description": "Grooved felt board with the title as push-in letter tiles; once per page.",
+      "html": "<section class=\"ds-board\"><h1 class=\"ds-tiles\"><span class=\"ds-tile\">Paste</span><span class=\"ds-tile\">a</span><span class=\"ds-tile\">YouTube</span><span class=\"ds-tile\">link</span></h1><p class=\"ds-lede\">PeakCut finds the moments worth posting and cuts them into captioned 9:16 clips.</p></section>",
+      "css": ".ds-board{padding:28px 32px 24px;border:1px solid var(--line, #2a2724);border-radius:4px;background-color:var(--felt-raised, #141210);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 7px,var(--groove, #090807) 7px,var(--groove, #090807) 9px);font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;}.ds-tiles{display:flex;flex-wrap:wrap;gap:0.32em 0.28em;margin:0;font-size:40px;}.ds-tile{display:inline-block;background:var(--ink, #f4efe6);color:var(--felt, #0d0c0b);border-radius:2px;padding:0.02em 0.22em 0.04em;line-height:1;font-weight:700;text-transform:uppercase;letter-spacing:0.01em;box-shadow:0 2px 0 var(--groove, #090807),0 3px 6px rgb(0 0 0 / 0.35);animation:ds-tile-in .42s cubic-bezier(0.16, 1, 0.3, 1) both;}.ds-tile:nth-child(2){animation-delay:32ms}.ds-tile:nth-child(3){animation-delay:64ms}.ds-tile:nth-child(4){animation-delay:96ms}@keyframes ds-tile-in{from{opacity:0;transform:translateY(-0.35em) scale(0.96)}to{opacity:1;transform:none}}.ds-lede{margin:20px 0 0;max-width:60ch;font-size:18px;line-height:1.45;color:var(--ink-soft, #c9c1b4);}@media (prefers-reduced-motion: reduce){.ds-tile{animation:none}}"
+    },
+    {
+      "name": "Bulb Chase",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Signature progress: amber bulbs with a travelling pulse while a job runs.",
+      "html": "<div class=\"ds-chase\" role=\"progressbar\" aria-valuenow=\"65\" aria-valuemin=\"0\" aria-valuemax=\"100\"><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:0ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:50ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:100ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:150ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:200ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:250ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:300ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:350ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:400ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:450ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:500ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:550ms\"></span><span class=\"ds-bulb ds-bulb-on\" style=\"animation-delay:600ms\"></span><span class=\"ds-bulb \" style=\"animation-delay:650ms\"></span><span class=\"ds-bulb \" style=\"animation-delay:700ms\"></span><span class=\"ds-bulb \" style=\"animation-delay:750ms\"></span><span class=\"ds-bulb \" style=\"animation-delay:800ms\"></span><span class=\"ds-bulb \" style=\"animation-delay:850ms\"></span><span class=\"ds-bulb \" style=\"animation-delay:900ms\"></span><span class=\"ds-bulb \" style=\"animation-delay:950ms\"></span></div><p class=\"ds-chase-stat\">Rendering 65%</p>",
+      "css": ".ds-chase{display:flex;align-items:center;gap:6px;}.ds-bulb{flex:0 1 11px;min-width:5px;aspect-ratio:1;border-radius:999px;background:var(--bulb-dim, #3a3127);}.ds-bulb-on{background:radial-gradient(circle at 40% 35%,#fff3d6 0 18%,var(--bulb, #ffb43d) 55%,#c9821c 100%);box-shadow:0 0 6px 1px rgb(255 180 61 / 0.45);animation:ds-chase 1.6s linear infinite;}@keyframes ds-chase{0%,100%{filter:brightness(0.82)}12%{filter:brightness(1.35)}}.ds-chase-stat{margin:12px 0 0;font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;font-size:15px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--bulb, #ffb43d);}@media (prefers-reduced-motion: reduce){.ds-bulb-on{animation:none}}"
+    },
+    {
+      "name": "Clip State Marks",
+      "kind": "chip",
+      "refersTo": "",
+      "description": "One mark per platform in a fixed cell: hollow, working, posted, failed.",
+      "html": "<div class=\"ds-marks\"><span><i class=\"ds-mark ds-none\"></i>YT</span><span><i class=\"ds-mark ds-working\"></i>IG</span><span><i class=\"ds-mark ds-posted\"></i>YT</span><span><i class=\"ds-mark ds-fail\"></i>IG</span></div>",
+      "css": ".ds-marks{display:flex;gap:12px;font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;font-size:13px;font-weight:600;letter-spacing:0.12em;color:var(--ink-mute, #958d81);}.ds-marks span{display:inline-flex;align-items:center;gap:6px;}.ds-mark{display:inline-block;width:11px;height:11px;border-radius:999px;box-sizing:border-box;}.ds-none{border:1.5px solid var(--line-strong, #3d3933);}.ds-working{border:1.5px solid var(--bulb, #ffb43d);}.ds-posted{background:var(--posted, #7fd6a1);}.ds-fail{border:1.5px solid var(--fail, #e5484d);background:linear-gradient(45deg,transparent 42%,var(--fail, #e5484d) 42% 58%,transparent 58%);}"
+    },
+    {
+      "name": "Score Plate",
+      "kind": "custom",
+      "refersTo": "score-plate",
+      "description": "Black-weight tabular viral score floated over the clip frame.",
+      "html": "<span class=\"ds-score\">90</span>",
+      "css": ".ds-score{display:inline-block;border-radius:2px;background:var(--felt, #0d0c0b);color:var(--ink, #f4efe6);padding:2px 8px;font-family:var(--font-shoulders, 'Big Shoulders'), 'Arial Narrow', sans-serif;font-size:26px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;box-shadow:0 2px 8px rgb(0 0 0 / 0.45);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Marquee Letterboard",
+    "overview": "PeakCut bills every video on a cinema marquee. The shell is grooved black felt, the video's title is set in push-in letter tiles, and a job's progress runs as a row of marquee bulbs. Everything else is quiet, condensed, letter-white type on felt, ruled with single pixel lines, so the only things that ever glow are the tiles and the bulbs.\n\nIt is an operating tool for solo clippers working long sessions, often at night: dark by default (`color-scheme: dark`), dense but legible, with one condensed family doing every job. It explicitly refuses the category default of a near-black SaaS dashboard with purple gradients and soft rounded cards. There are no gradients on surfaces, no glass, no large radii, and no decorative colour.",
+    "keyCharacteristics": [
+      "Grooved felt title board with the title as uppercase letter tiles, once per page.",
+      "Bulb-chase progress as the signature move; nothing else animates continuously.",
+      "Colour carries state, never decoration: amber live, red failed, green posted.",
+      "One condensed type family (Big Shoulders, optical-size axis) ranked by weight and case.",
+      "One UI radius (4px), one-pixel rules, flat tonal layers of felt."
+    ],
+    "rules": [
+      {
+        "name": "The One Job Rule",
+        "body": "Each signal colour means exactly one thing. Amber is live progress, red is failure, green is posted. If a colour would need a second meaning, use ink weight or a mark instead.",
+        "section": "colors"
+      },
+      {
+        "name": "The Nothing Else Glows Rule",
+        "body": "Only lit bulbs carry a glow (`0 0 6px 1px` amber at 45%). No other element gets a coloured shadow, gradient fill or tinted surface.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Rank by weight and case, never by a second typeface. Uppercase plus tracking marks controls and labels; sentence case marks content people read.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Count Rule",
+        "body": "Percentages, scores, timestamps and character counts use tabular figures so they do not jitter while updating.",
+        "section": "typography"
+      },
+      {
+        "name": "The Felt Is Flat Rule",
+        "body": "Panels, cards, dialogs and the rail have no shadow. Separate them with a felt step and a one-pixel rule.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** open every page with the grooved title board and set its title as letter tiles, one title per page.",
+      "**Do** use amber only for something live, red only for failure, green only for posted.",
+      "**Do** use the 4px radius on every UI surface and 2px only on physical plates (tiles, score plate).",
+      "**Do** separate surfaces with a felt step and a one-pixel rule.",
+      "**Do** keep component styles in `@layer components` so Tailwind utilities can override width, height and flex.",
+      "**Do** use lucide icons at stroke 1.75 (2 for plus, send, close, retry; 2.25 for checks), 14-16px.",
+      "**Do** write every error as what happened plus what to do next.",
+      "**Do** disable all motion under `prefers-reduced-motion`."
+    ],
+    "donts": [
+      "**Don't** use purple, gradients on surfaces, glassy panels or soft large-radius cards.",
+      "**Don't** add a glow or coloured shadow to anything but a lit bulb.",
+      "**Don't** introduce a second typeface or rank text by a new size when weight and case will do.",
+      "**Don't** put a small uppercase eyebrow label above a heading.",
+      "**Don't** use em-dashes in visible text; use commas, colons or \"to\".",
+      "**Don't** animate anything continuously other than the bulb chase and the live state pulses."
+    ]
+  }
+}
