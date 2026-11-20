@@ -3,7 +3,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from app import worker
 from app.config import get_settings
@@ -45,7 +45,12 @@ def create_job(body: CreateJob, session: Session = Depends(get_session)):
 
 @router.get("/jobs")
 def list_jobs(session: Session = Depends(get_session)):
-    return session.exec(select(Job).order_by(Job.id.desc()).limit(30)).all()
+    jobs = session.exec(select(Job).order_by(Job.id.desc()).limit(30)).all()
+    ids = [j.id for j in jobs]
+    counts = dict(
+        session.exec(select(Clip.job_id, func.count(Clip.id)).where(Clip.job_id.in_(ids)).group_by(Clip.job_id)).all()
+    )
+    return [{**j.model_dump(), "clip_count": counts.get(j.id, 0)} for j in jobs]
 
 
 @router.get("/jobs/{job_id}")
