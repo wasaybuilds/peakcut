@@ -45,7 +45,8 @@ def run(pub_id: int) -> None:
             url = youtube.upload(path, yt.get("title", clip.title), yt.get("description", ""),
                                  yt.get("tags") or meta.get("hashtags") or [], yt.get("privacy", "public"))  # fmt: skip
         elif platform == "instagram":
-            url = instagram.publish(path, (meta.get("instagram") or {}).get("caption", clip.title))
+            cover_at = (meta.get("cover") or {}).get("at")
+            url = instagram.publish(path, (meta.get("instagram") or {}).get("caption", clip.title), cover_at=cover_at)
         else:
             raise RuntimeError(f"unknown platform {platform}")
         _set(pub_id, status="done", post_url=url)

@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
+from app.config import get_settings
 from app.db import Clip, Job, Publish, get_session
-from app.pipeline import ingest, metadata
+from app.pipeline import cover, ingest, metadata
 from app.publish import instagram, publisher, youtube
 
 router = APIRouter(prefix="/api")
@@ -120,6 +121,37 @@ def update_meta(clip_id: int, body: MetaUpdate, session: Session = Depends(get_s
     session.add(clip)
     session.commit()
     return meta
+
+
+# ---- cover image ----------------------------------------------------------------
+
+
+class CoverBody(BaseModel):
+    at: float | None = Field(default=None, ge=0)  # seconds into the clip; default keeps the current frame
+    text: str | None = Field(default=None, max_length=80)  # default keeps the current text
+
+
+@router.post("/clips/{clip_id}/cover")
+def make_cover(clip_id: int, body: CoverBody, session: Session = Depends(get_session)):
+    """Create or redo a clip's cover: one frame plus the hook text, inside the grid's 3:4 band."""
+    clip = session.get(Clip, clip_id)
+    if not clip or not clip.file_path:
+        raise HTTPException(404, "This clip hasn't been rendered yet.")
+    renders = get_settings().renders_dir
+    video = renders / clip.file_path
+    length = clip.end - clip.start
+    prev = (clip.meta or {}).get("cover") or {}
+    at = body.at if body.at is not None else prev.get("at", cover.default_at(length))
+    at = min(float(at), max(0.0, length - 0.2))
+    text = body.text if body.text is not None else prev.get("text", clip.hook_text or clip.title)
+    try:
+        out = cover.make_cover(video, video.with_name(f"{video.stem}_cover.jpg"), at, text)
+    except RuntimeError as e:
+        raise HTTPException(500, str(e)) from e
+    clip.meta = {**(clip.meta or {}), "cover": {"path": out.relative_to(renders).as_posix(), "at": at, "text": text}}
+    session.add(clip)
+    session.commit()
+    return clip.meta["cover"]
 
 
 # ---- publishing -----------------------------------------------------------------

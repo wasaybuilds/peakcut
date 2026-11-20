@@ -92,18 +92,26 @@ def status() -> dict:
         return {"connected": False, "username": data.get("username"), "error": str(e)}
 
 
-def publish(path: Path, caption: str, progress=None) -> str:
-    """Post a Reel; returns its URL."""
+def publish(path: Path, caption: str, cover_at: float | None = None, progress=None) -> str:
+    """Post a Reel; returns its URL.
+
+    `cover_at` picks the cover frame (seconds into the clip). The API only takes a custom cover
+    *image* from a public URL, which a local app doesn't have, so the frame is the cover; the
+    text cover image is for posting from the Instagram app.
+    """
     acct = _token()
     tok, uid, v = acct["access_token"], acct["user_id"], _version()
     size = path.stat().st_size
 
     with httpx.Client(timeout=120) as client:
         # 1) container (resumable: we upload the bytes ourselves, no public URL needed)
-        c = _check(client.post(f"{GRAPH}/{v}/{uid}/media", data={
+        params = {
             "media_type": "REELS", "upload_type": "resumable", "caption": caption[:2200],
             "share_to_feed": "true", "access_token": tok,
-        }))  # fmt: skip
+        }  # fmt: skip
+        if cover_at is not None:
+            params["thumb_offset"] = str(int(cover_at * 1000))  # milliseconds
+        c = _check(client.post(f"{GRAPH}/{v}/{uid}/media", data=params))
         container = c["id"]
 
         # 2) upload the video file

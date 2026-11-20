@@ -106,7 +106,7 @@ def rerender(job_id: int, body: Rerender, session: Session = Depends(get_session
     for clip in session.exec(select(Clip).where(Clip.job_id == job_id)):
         for rel in (clip.file_path, clip.thumb_path):
             if rel:  # remove the old render (+ its .ass/.jpg siblings)
-                for sibling in (renders / rel).parent.glob(Path(rel).stem + ".*"):
+                for sibling in (renders / rel).parent.glob(Path(rel).stem + "*"):  # .mp4/.ass/.jpg + _cover.jpg
                     sibling.unlink(missing_ok=True)
         clip.layout = body.layout
         if body.caption_style:

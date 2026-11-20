@@ -16,7 +16,7 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.db import Clip, Job, JobStatus, get_engine
-from app.pipeline import captions, dash, facecam, highlights, ingest, metadata, render, signals, transcribe
+from app.pipeline import captions, cover, dash, facecam, highlights, ingest, metadata, render, signals, transcribe
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +50,19 @@ def _stepper(job_id: int, name: str):
     a, b = STEPS[name]
     _update(job_id, step=name, progress=a)
     return lambda frac: _update(job_id, progress=round(a + (b - a) * min(1.0, max(0.0, frac)), 3))
+
+
+def _render_cover(video: Path, clip: Clip, duration: float) -> dict | None:
+    """Cover image next to the clip; keeps the user's chosen frame/text across re-renders."""
+    prev = (clip.meta or {}).get("cover") or {}
+    at = min(float(prev.get("at", cover.default_at(duration))), max(0.0, duration - 0.2))
+    text = prev.get("text", clip.hook_text or clip.title)
+    try:
+        out = cover.make_cover(video, video.with_name(f"{video.stem}_cover.jpg"), at, text)
+    except RuntimeError as e:
+        log.warning("cover for clip %s failed: %s", clip.id, e)
+        return prev or None
+    return {"path": out.relative_to(get_settings().renders_dir).as_posix(), "at": at, "text": text}
 
 
 def _find_facecam(job_id: int, vid: str, spans, source_for, src_aspect: float, out_dir: Path) -> dict:
@@ -230,6 +243,7 @@ def run_job(job_id: int) -> None:
                 clip = s.get(Clip, cid)
                 clip.file_path = out.relative_to(settings.renders_dir).as_posix()
                 clip.thumb_path = thumb.relative_to(settings.renders_dir).as_posix() if thumb.exists() else None
+                clip.meta = {**(clip.meta or {}), "cover": _render_cover(out, clip, end - start)}
                 s.add(clip)
                 s.commit()
             p((i + 1) / len(clip_ids))

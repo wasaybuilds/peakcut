@@ -97,5 +97,15 @@ def test_facecam_detect_needs_a_face_in_the_same_spot(tmp_path, monkeypatch):
     assert box["x"] + box["w"] <= 1 and box["y"] + box["h"] <= 1
 
 
+def test_cover_text_sits_in_the_profile_grid_band():
+    from app.pipeline.cover import GRID_BOTTOM, GRID_TOP, cover_ass, default_at
+
+    ass = cover_ass("Stole it {from} my mother")
+    assert "PlayResX: 1080" in ass and "PlayResY: 1920" in ass
+    assert f"\\pos(540,{(GRID_TOP + GRID_BOTTOM) // 2})" in ass  # centre of the 3:4 grid crop
+    assert "STOLE IT (FROM) MY MOTHER" in ass  # uppercased, override braces neutralised
+    assert 0 < default_at(30) < 30 and default_at(0.1) == 0.0
+
+
 def test_relative_loudness_is_zero_for_flat_audio():
     assert np.allclose(relative_loudness(np.full(500, -20.0)), 0)
