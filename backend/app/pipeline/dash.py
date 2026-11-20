@@ -93,14 +93,17 @@ def download_range(fmt: dict, start: float, end: float, out: Path, progress=None
     if not out.exists() or out.stat().st_size == 0:
         urls = [fmt["frag_url"].replace(MARK, str(i)) for i in range(first, last + 1)]
         tmp = out.with_suffix(out.suffix + ".part")
-        with httpx.Client(headers=headers, timeout=60, follow_redirects=True) as client, open(tmp, "wb") as f:
-            with ThreadPoolExecutor(workers) as pool:
-                batch = 64  # keep memory flat: fetch in parallel, write in order
-                for i in range(0, len(urls), batch):
-                    for data in pool.map(lambda u: _get(client, u), urls[i : i + batch]):
-                        f.write(data)
-                    if progress:
-                        progress(min(1.0, (i + batch) / len(urls)))
+        batch = 64  # keep memory flat: fetch in parallel, write in order
+        with (
+            httpx.Client(headers=headers, timeout=60, follow_redirects=True) as client,
+            open(tmp, "wb") as f,
+            ThreadPoolExecutor(workers) as pool,
+        ):
+            for i in range(0, len(urls), batch):
+                for data in pool.map(lambda u: _get(client, u), urls[i : i + batch]):
+                    f.write(data)
+                if progress:
+                    progress(min(1.0, (i + batch) / len(urls)))
         tmp.replace(out)
 
     # Fragment timestamps are normally absolute (time since stream start); trust them when sane.
