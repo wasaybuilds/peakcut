@@ -1,171 +1,190 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowRight, CircleAlert, CircleCheck, Cpu, ExternalLink, Link2, LoaderCircle, Scissors } from "lucide-react";
+import { ArrowRight, Check, CircleDashed, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { createJob, fmtTime, getHealth, type Health, type Job, LAYOUTS, listJobs } from "@/lib/api";
+import { cleanTitle, LetterTitle } from "@/components/marquee";
+import { createJob, fmtTime, getAccounts, getHealth, type Accounts, type Health, type Job, LAYOUTS, listJobs } from "@/lib/api";
+
+const LAYOUT_USE: Record<string, string> = {
+  zoom_fill: "Best for no-commentary gameplay.",
+  facecam_split: "Best for streams with a webcam.",
+  blur_fill: "When on-screen text or the map matters.",
+  center_crop: "For centered action like driving.",
+};
 
 export default function Home() {
+  const router = useRouter();
   const [url, setUrl] = useState("");
-  const [health, setHealth] = useState<Health | null>(null);
-  const [apiDown, setApiDown] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [count, setCount] = useState(6);
   const [layout, setLayout] = useState("zoom_fill");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [health, setHealth] = useState<Health | null>(null);
+  const [accounts, setAccounts] = useState<Accounts | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const router = useRouter();
 
   useEffect(() => {
-    getHealth()
-      .then(setHealth)
-      .catch(() => setApiDown(true));
-    listJobs()
-      .then(setJobs)
-      .catch(() => {});
+    getHealth().then(setHealth).catch(() => setHealth(null));
+    getAccounts().then(setAccounts).catch(() => {});
+    listJobs().then(setJobs).catch(() => {});
   }, []);
-
-  const configured = health ? Object.values(health.providers).filter((p) => p.configured).length : 0;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(url.trim())) {
-      setNote("Paste a YouTube link (youtube.com or youtu.be).");
+    if (!/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(url.trim())) {
+      setError("That isn't a YouTube link. Paste one from youtube.com or youtu.be.");
       return;
     }
     setBusy(true);
+    setError(null);
     try {
       const job = await createJob({ url: url.trim(), clip_count: count, layout });
       router.push(`/jobs/${job.id}`);
     } catch (err) {
-      setNote((err as Error).message);
+      setError((err as Error).message);
       setBusy(false);
     }
   }
 
+  const providers = health ? Object.values(health.providers) : [];
+  const setup = [
+    { done: !!health?.ffmpeg.found, text: "ffmpeg installed", help: "Run scripts\\setup.ps1" },
+    { done: !!health?.providers.groq?.configured, text: "Speech-to-text key (Groq)", help: "Add GROQ_API_KEY to .env", href: health?.providers.groq?.signup_url },
+    { done: providers.some((p) => p.configured), text: "At least one AI key", help: "Add ZHIPU_API_KEY or GEMINI_API_KEY to .env", href: health?.providers.zhipu?.signup_url },
+    { done: !!(accounts?.youtube.connected || accounts?.instagram.connected), text: "A posting account (optional)", help: "Connect YouTube or Instagram", href: "/settings" },
+  ];
+  const missing = setup.filter((s) => !s.done);
+
   return (
-    <main className="relative min-h-dvh overflow-hidden">
-      {/* glow */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,61,110,0.22),rgba(124,92,255,0.12),transparent)] blur-2xl" />
+    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-6 sm:px-8 lg:pt-10">
+      <section className="felt-grooves rounded-board border border-line px-5 pb-6 pt-7 sm:px-8 sm:pt-9">
+        <LetterTitle text="Paste a YouTube link" />
+        <p className="mt-5 max-w-[60ch] text-[18px] text-ink-soft">
+          PeakCut finds the moments worth posting and cuts them into captioned 9:16 clips. Long streams work too.
+        </p>
 
-      <header className="relative mx-auto flex max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
-        <div className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-accent to-accent-2">
-            <Scissors className="size-4" />
-          </span>
-          PeakCut
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/settings" className="text-sm text-muted transition-colors hover:text-foreground">
-            Accounts
-          </Link>
-          <StatusPill health={health} apiDown={apiDown} configured={configured} />
-        </div>
-      </header>
-
-      <section className="relative mx-auto max-w-3xl px-4 pt-16 text-center sm:px-6 sm:pt-24">
-        <motion.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="text-4xl font-semibold tracking-tight text-balance sm:text-6xl"
-        >
-          Long video in.{" "}
-          <span className="bg-gradient-to-r from-accent to-accent-2 bg-clip-text text-transparent">
-            Viral clips out.
-          </span>
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto mt-4 max-w-xl text-pretty text-muted sm:text-lg"
-        >
-          Paste a GTA 6 stream or video. AI finds the best moments from chat spikes, loudness and the
-          transcript, then cuts 9:16 clips with animated captions.
-        </motion.p>
-
-        <motion.form
-          onSubmit={submit}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto mt-10 flex max-w-2xl flex-col gap-2 rounded-2xl border border-border bg-surface/80 p-2 backdrop-blur sm:flex-row"
-        >
-          <label className="flex flex-1 items-center gap-2 px-3">
-            <Link2 className="size-4 shrink-0 text-muted" />
+        <form onSubmit={submit} className="mt-7" noValidate>
+          <label htmlFor="url" className="label">
+            Video link
+          </label>
+          <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_9.5rem_auto]">
             <input
+              id="url"
               value={url}
               onChange={(e) => {
                 setUrl(e.target.value);
-                setNote(null);
+                setError(null);
               }}
+              inputMode="url"
+              autoComplete="off"
               placeholder="https://www.youtube.com/watch?v=..."
-              className="h-11 w-full bg-transparent text-base outline-none placeholder:text-muted/70"
+              aria-invalid={!!error}
+              aria-describedby={error ? "url-error" : undefined}
+              className="field h-13 text-[18px]"
             />
-          </label>
-          <select
-            value={count}
-            onChange={(e) => setCount(Number(e.target.value))}
-            aria-label="Number of clips"
-            className="h-11 rounded-xl border border-border bg-surface-2 px-3 text-sm text-foreground outline-none"
-          >
-            {[3, 6, 8, 12].map((n) => (
-              <option key={n} value={n}>
-                {n} clips
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={busy}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-foreground px-5 font-medium text-background transition-transform active:scale-[0.97] disabled:opacity-60"
-          >
-            {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            Find clips {!busy && <ArrowRight className="size-4" />}
-          </button>
-        </motion.form>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5" role="radiogroup" aria-label="Layout">
-          {LAYOUTS.map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              role="radio"
-              aria-checked={layout === l.id}
-              title={l.hint}
-              onClick={() => setLayout(l.id)}
-              className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                layout === l.id ? "bg-surface-2 text-foreground ring-1 ring-border" : "text-muted hover:text-foreground"
-              }`}
-            >
-              {l.label}
+            <label className="sr-only" htmlFor="count">
+              Number of clips
+            </label>
+            <select id="count" value={count} onChange={(e) => setCount(Number(e.target.value))} className="field h-13">
+              {[3, 6, 8, 12].map((n) => (
+                <option key={n} value={n}>
+                  {n} clips
+                </option>
+              ))}
+            </select>
+            <button type="submit" disabled={busy} className="btn btn-primary h-13 px-7">
+              {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+              Find clips
+              {!busy && <ArrowRight className="size-4" strokeWidth={2} />}
             </button>
-          ))}
-        </div>
-        {note && <p className="mt-3 text-sm text-warn">{note}</p>}
+          </div>
+          {error && (
+            <p id="url-error" className="mt-2 text-[15px] text-fail">
+              {error}
+            </p>
+          )}
+
+          <fieldset className="mt-6">
+            <legend className="label">Layout</legend>
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {LAYOUTS.map((l) => {
+                const on = layout === l.id;
+                return (
+                  <label
+                    key={l.id}
+                    className={`cursor-pointer rounded-board border px-4 py-3 transition-colors ${
+                      on ? "border-ink bg-felt-high" : "border-line bg-felt hover:border-line-strong"
+                    }`}
+                  >
+                    <input type="radio" name="layout" value={l.id} checked={on} onChange={() => setLayout(l.id)} className="sr-only" />
+                    <span className="flex items-center justify-between text-[17px] font-bold uppercase tracking-[0.08em]">
+                      {l.label}
+                      {on && <Check className="size-4" strokeWidth={2.25} />}
+                    </span>
+                    <span className="mt-1 block text-[15px] leading-snug text-ink-soft">{l.hint}.</span>
+                    <span className="mt-1 block text-[14px] leading-snug text-ink-mute">{LAYOUT_USE[l.id]}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        </form>
       </section>
 
+      {health && missing.length > 0 && (
+        <section className="mt-10" aria-labelledby="setup-h">
+          <h2 id="setup-h" className="text-[24px] font-bold uppercase tracking-[0.04em]">
+            Finish setting up
+          </h2>
+          <ul className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+            {setup.map((s) => (
+              <li key={s.text} className="flex items-start gap-3">
+                {s.done ? (
+                  <Check className="mt-1 size-4 shrink-0 text-ink" strokeWidth={2.25} />
+                ) : (
+                  <CircleDashed className="mt-1 size-4 shrink-0 text-ink-mute" strokeWidth={1.75} />
+                )}
+                <span>
+                  <span className={s.done ? "text-ink-mute line-through decoration-line-strong" : "text-ink"}>{s.text}</span>
+                  {!s.done &&
+                    (s.href ? (
+                      <a href={s.href} target={s.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="block text-[15px] text-ink-soft underline decoration-line-strong underline-offset-4 hover:decoration-ink">
+                        {s.help}
+                      </a>
+                    ) : (
+                      <span className="block text-[15px] text-ink-soft">{s.help}</span>
+                    ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {health === null && (
+        <p className="mt-8 text-[16px] text-fail">Can&apos;t reach the PeakCut API on port 8000. Start it with scripts\dev.ps1, then reload.</p>
+      )}
+
       {jobs.length > 0 && (
-        <section className="relative mx-auto mt-16 max-w-3xl px-4 sm:px-6">
-          <h2 className="mb-3 text-sm font-medium text-muted">Recent</h2>
-          <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+        <section className="mt-12 lg:hidden" aria-labelledby="recent-h">
+          <h2 id="recent-h" className="text-[24px] font-bold uppercase tracking-[0.04em]">
+            Your videos
+          </h2>
+          <ul className="mt-3 divide-y divide-line border-y border-line">
             {jobs.slice(0, 8).map((j) => (
               <li key={j.id}>
-                <Link href={`/jobs/${j.id}`} className="flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-surface-2">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{j.title ?? j.source_url}</div>
-                    <div className="truncate text-xs text-muted">
-                      {j.channel ?? "…"}
-                      {j.duration ? ` · ${fmtTime(j.duration)}` : ""}
-                    </div>
-                  </div>
-                  <span
-                    className={`shrink-0 text-xs ${j.status === "done" ? "text-ok" : j.status === "failed" ? "text-warn" : "text-muted"}`}
-                  >
-                    {j.status === "running" ? `${Math.round(j.progress * 100)}%` : j.status}
+                <Link href={`/jobs/${j.id}`} className="flex items-center justify-between gap-4 py-3">
+                  <span className="min-w-0">
+                    <span className="block truncate">{cleanTitle(j.title) || j.source_url}</span>
+                    <span className="block text-[14px] text-ink-mute">
+                      {j.channel ?? "YouTube"}
+                      {j.duration ? `, ${fmtTime(j.duration)}` : ""}
+                    </span>
+                  </span>
+                  <span className={`tabular shrink-0 text-[13px] font-semibold tracking-[0.08em] ${j.status === "failed" ? "text-fail" : j.status === "done" ? "text-ink-mute" : "text-bulb"}`}>
+                    {j.status === "running" ? `${Math.round(j.progress * 100)}%` : j.status.toUpperCase()}
                   </span>
                 </Link>
               </li>
@@ -173,54 +192,6 @@ export default function Home() {
           </ul>
         </section>
       )}
-
-      {health && (
-        <section className="relative mx-auto mt-20 max-w-3xl px-4 pb-20 sm:px-6">
-          <h2 className="mb-3 text-sm font-medium text-muted">Free AI providers</h2>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {Object.entries(health.providers).map(([name, p]) => (
-              <div key={name} className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{p.label}</div>
-                  <div className="truncate font-mono text-xs text-muted">{p.model}</div>
-                </div>
-                {p.configured ? (
-                  <CircleCheck className="size-4 shrink-0 text-ok" />
-                ) : (
-                  <a
-                    href={p.signup_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex shrink-0 items-center gap-1 text-xs text-accent hover:underline"
-                  >
-                    Get key <ExternalLink className="size-3" />
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 flex items-center gap-2 text-xs text-muted">
-            <Cpu className="size-3.5" /> Encoder: <span className="font-mono">{health.ffmpeg.encoder ?? "n/a"}</span>
-          </p>
-        </section>
-      )}
-    </main>
-  );
-}
-
-function StatusPill({ health, apiDown, configured }: { health: Health | null; apiDown: boolean; configured: number }) {
-  if (apiDown)
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-warn">
-        <CircleAlert className="size-3.5" /> API offline
-      </span>
-    );
-  if (!health) return <span className="h-6 w-24 animate-pulse rounded-full bg-surface-2" />;
-  const ready = health.ok && configured > 0;
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs ${ready ? "text-ok" : "text-warn"}`}>
-      <span className={`size-1.5 rounded-full ${ready ? "bg-ok" : "bg-warn"}`} />
-      {ready ? `Ready · ${configured} AI key${configured > 1 ? "s" : ""}` : "Add an API key to .env"}
-    </span>
+    </div>
   );
 }
