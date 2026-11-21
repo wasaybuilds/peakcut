@@ -1,13 +1,14 @@
 "use client";
 
-import { Check, Copy, Download, ImageDown, Play, RotateCcw, ScanFace, Send, Sparkles } from "lucide-react";
+import { Check, Copy, Download, ImageDown, LoaderCircle, Play, RotateCcw, ScanFace, Send, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 
 import { FacecamEditor, LayoutSwitch } from "@/components/layout-panel";
 import { BulbChase, type BulbState, cleanTitle, LetterTitle, ScorePlate, StateMarks } from "@/components/marquee";
 import { PostDialog } from "@/components/post-dialog";
-import { type Clip, fileUrl, fmtTime, getJob, type Job, LAYOUTS, retryJob, writeJobCaptions } from "@/lib/api";
+import { type Clip, deleteJob, fileUrl, fmtSlot, fmtTime, getJob, isQueued, type Job, LAYOUTS, retryJob, writeJobCaptions } from "@/lib/api";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -28,11 +29,12 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
         setJob(data.job);
         setClips(data.clips);
         setErr(null);
-        const uploading = data.clips.some((c) =>
-          Object.values(c.publishes ?? {}).some((p) => p && (p.status === "pending" || p.status === "uploading")),
-        );
+        const pubs = data.clips.flatMap((c) => Object.values(c.publishes ?? {}));
+        const uploading = pubs.some((p) => p && (p.status === "uploading" || (p.status === "pending" && !isQueued(p))));
+        const queued = pubs.some((p) => isQueued(p));
         if (data.job.status === "queued" || data.job.status === "running") timer = setTimeout(tick, 1500);
         else if (uploading) timer = setTimeout(tick, 3000);
+        else if (queued) timer = setTimeout(tick, 30_000); // pick up queued posts when their slot comes
       } catch (e) {
         if (!alive) return;
         setErr((e as Error).message);
@@ -160,6 +162,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
             {captionBusy ? "Writing captions…" : "Rewrite all captions"}
           </button>
         )}
+        {!running && <DeleteJob jobId={job.id} onError={setErr} />}
       </div>
       {camOpen && isFacecam && !running && <FacecamEditor job={job} onClose={() => setCamOpen(false)} onQueued={queued} />}
       {err && <p className="mt-2 text-[15px] text-fail">{err}</p>}
@@ -214,12 +217,52 @@ function ClipVideo({ clip }: { clip: Clip }) {
   );
 }
 
+/** Two-step delete: the first click asks, the second deletes and goes home. */
+function DeleteJob({ jobId, onError }: { jobId: number; onError: (msg: string) => void }) {
+  const router = useRouter();
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  if (!asking) {
+    return (
+      <button className="btn btn-line btn-sm" onClick={() => setAsking(true)}>
+        <Trash2 className="size-4" strokeWidth={1.75} /> Delete job
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1.5" role="group" aria-label="Confirm delete">
+      <span className="text-[15px] text-ink-soft">Delete this job, its clips and files?</span>
+      <button
+        className="btn btn-primary btn-sm"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await deleteJob(jobId);
+            router.push("/");
+          } catch (e) {
+            onError((e as Error).message);
+            setBusy(false);
+            setAsking(false);
+          }
+        }}
+      >
+        {busy ? <LoaderCircle className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" strokeWidth={2} />} Delete
+      </button>
+      <button className="btn btn-line btn-sm" disabled={busy} onClick={() => setAsking(false)}>
+        Cancel
+      </button>
+    </div>
+  );
+}
+
 function ClipCard({ clip, onChanged, rendering }: { clip: Clip; onChanged: () => void; rendering: boolean }) {
   const [copied, setCopied] = useState(false);
   const [posting, setPosting] = useState(false);
   const postBtn = useRef<HTMLButtonElement>(null);
   const caption = clip.meta?.instagram?.caption ?? clip.title;
   const length = Math.round(clip.end - clip.start);
+  const queuedAt = Object.values(clip.publishes ?? {}).find((p) => isQueued(p))?.scheduled_at ?? null;
 
   return (
     <article className="group flex min-w-0 flex-col">
@@ -245,6 +288,7 @@ function ClipCard({ clip, onChanged, rendering }: { clip: Clip; onChanged: () =>
       {/* pushed to the bottom so every card's marks and actions line up across the row */}
       <div className="mt-auto flex items-center justify-between gap-2 pt-3">
         <StateMarks publishes={clip.publishes} />
+        {queuedAt && <span className="tabular truncate text-[13px] font-semibold tracking-[0.06em] text-ink-mute">{fmtSlot(queuedAt).toUpperCase()}</span>}
       </div>
       <div className="mt-3 flex gap-1.5">
         <button ref={postBtn} disabled={!clip.file_path} onClick={() => setPosting(true)} className="btn btn-primary btn-sm flex-1">

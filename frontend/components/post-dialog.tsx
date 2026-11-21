@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { LoaderCircle, Send, Sparkles, X } from "lucide-react";
+import { CalendarClock, Check, ChevronDown, LoaderCircle, Send, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -12,12 +12,23 @@ import {
   type Clip,
   type ClipMeta,
   fileUrl,
+  fmtSlot,
   getAccounts,
+  getSchedule,
+  isQueued,
+  markPosted,
   type Platform,
+  postQueuedNow,
   publishClip,
   saveClipMeta,
+  unmarkPosted,
+  unqueueClip,
   writeClipCaptions,
 } from "@/lib/api";
+
+const PLATFORM_NAME: Record<Platform, string> = { youtube: "YouTube Shorts", instagram: "Instagram Reels" };
+
+type Busy = "ai" | "post" | "queue" | "unqueue" | "now" | `mark-${Platform}` | `unmark-${Platform}`;
 
 /** Edit the post text for one clip and send it to YouTube / Instagram. */
 export function PostDialog({
@@ -42,7 +53,10 @@ export function PostDialog({
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
   const [targets, setTargets] = useState<Record<Platform, boolean>>({ youtube: true, instagram: true });
-  const [busy, setBusy] = useState<null | "ai" | "post">(null);
+  const [busy, setBusy] = useState<Busy | null>(null);
+  const [nextSlot, setNextSlot] = useState<string | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [links, setLinks] = useState<Record<Platform, string>>({ youtube: "", instagram: "" });
   const [err, setErr] = useState<string | null>(null);
   const [side, setSide] = useState<"clip" | "cover">("clip");
 
@@ -64,6 +78,10 @@ export function PostDialog({
         setTargets({ youtube: a.youtube.connected, instagram: a.instagram.connected });
       })
       .catch(() => setAccounts(null));
+    getSchedule()
+      .then((sch) => setNextSlot(sch.next_slot))
+      .catch(() => setNextSlot(null));
+    setLinks({ youtube: "", instagram: "" });
     // focus the dialog so keyboard and screen-reader users land inside it
     requestAnimationFrame(() => panel.current?.focus());
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,10 +131,10 @@ export function PostDialog({
     }
   }
 
-  async function post() {
+  async function post(when: "now" | "queue") {
     const platforms = (Object.keys(targets) as Platform[]).filter((p) => targets[p]);
     if (!platforms.length) return setErr("Pick YouTube, Instagram or both.");
-    setBusy("post");
+    setBusy(when === "now" ? "post" : "queue");
     setErr(null);
     try {
       await saveClipMeta(clip.id, {
@@ -124,7 +142,7 @@ export function PostDialog({
         instagram: { caption },
         hashtags: tags.split(/[\s,]+/).filter(Boolean),
       });
-      await publishClip(clip.id, platforms);
+      await publishClip(clip.id, platforms, when);
       onPosted();
       onClose();
     } catch (e) {
@@ -134,7 +152,24 @@ export function PostDialog({
     }
   }
 
+  /** Small actions that refresh the card behind the dialog; most keep the dialog open. */
+  async function act(name: Busy, fn: () => Promise<unknown>, close = false) {
+    setBusy(name);
+    setErr(null);
+    try {
+      await fn();
+      onPosted();
+      if (close) onClose();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const noAccounts = accounts && !accounts.youtube.connected && !accounts.instagram.connected;
+  const queuedOn = (Object.keys(clip.publishes ?? {}) as Platform[]).filter((p) => isQueued(clip.publishes?.[p]));
+  const queuedAt = queuedOn.length ? (clip.publishes?.[queuedOn[0]]?.scheduled_at ?? null) : null;
 
   return (
     <AnimatePresence>
@@ -200,6 +235,23 @@ export function PostDialog({
                   <X className="size-4" strokeWidth={2} />
                 </button>
               </div>
+
+              {queuedAt && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-board border border-line-strong px-3 py-2.5">
+                  <p className="flex items-center gap-2 text-[15px] text-ink">
+                    <CalendarClock className="size-4 shrink-0" strokeWidth={1.75} />
+                    Queued for {fmtSlot(queuedAt)} on {queuedOn.map((p) => (p === "youtube" ? "YouTube" : "Instagram")).join(" and ")}
+                  </p>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => act("now", () => postQueuedNow(clip.id), true)} disabled={busy !== null} className="btn btn-line btn-sm">
+                      {busy === "now" && <LoaderCircle className="size-3.5 animate-spin" />} Post now
+                    </button>
+                    <button onClick={() => act("unqueue", () => unqueueClip(clip.id))} disabled={busy !== null} className="btn btn-line btn-sm">
+                      {busy === "unqueue" && <LoaderCircle className="size-3.5 animate-spin" />} Remove from queue
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {noAccounts && (
                 <p className="mt-4 rounded-board border border-line-strong px-3 py-2.5 text-[15px] text-ink-soft">
@@ -272,10 +324,87 @@ export function PostDialog({
 
               {err && <p className="mt-4 text-[15px] text-fail">{err}</p>}
 
-              <button onClick={post} disabled={busy !== null || (!targets.youtube && !targets.instagram)} className="btn btn-primary mt-6 h-12 w-full">
-                {busy === "post" ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" strokeWidth={2} />}
-                Post now
-              </button>
+              <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                <button
+                  onClick={() => post("queue")}
+                  disabled={busy !== null || !!queuedAt || (!targets.youtube && !targets.instagram)}
+                  className="btn btn-line h-12"
+                  title={queuedAt ? "Already in the queue" : undefined}
+                >
+                  {busy === "queue" ? <LoaderCircle className="size-4 animate-spin" /> : <CalendarClock className="size-4" strokeWidth={1.75} />}
+                  {nextSlot && !queuedAt ? `Queue for ${fmtSlot(nextSlot)}` : "Add to queue"}
+                </button>
+                <button onClick={() => post("now")} disabled={busy !== null || (!targets.youtube && !targets.instagram)} className="btn btn-primary h-12">
+                  {busy === "post" ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" strokeWidth={2} />}
+                  Post now
+                </button>
+              </div>
+
+              <div className="mt-6 border-t border-line pt-4">
+                <button
+                  onClick={() => setManualOpen((o) => !o)}
+                  aria-expanded={manualOpen}
+                  className="flex w-full items-center justify-between text-left text-[15px] font-semibold uppercase tracking-[0.1em] text-ink-soft hover:text-ink"
+                >
+                  Posted it yourself?
+                  <ChevronDown className={`size-4 transition-transform duration-200 ${manualOpen ? "rotate-180" : ""}`} strokeWidth={1.75} />
+                </button>
+                {manualOpen && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-[14px] leading-snug text-ink-mute">Mark the clip as posted so it shows as done here. PeakCut won&apos;t upload it.</p>
+                    {(["youtube", "instagram"] as Platform[]).map((p) => {
+                      const s = clip.publishes?.[p];
+                      const done = s?.status === "done";
+                      const blocked = !!s && (s.status === "uploading" || s.status === "pending");
+                      return (
+                        <div key={p} className="grid items-center gap-2 rounded-board border border-line px-3 py-2.5 sm:grid-cols-[9.5rem_minmax(0,1fr)_auto]">
+                          <span className="text-[15px] font-bold uppercase tracking-[0.06em]">{PLATFORM_NAME[p]}</span>
+                          {done ? (
+                            <>
+                              <span className="flex min-w-0 items-center gap-2 text-[15px] text-ink-soft">
+                                <span className="mark mark-posted" aria-hidden />
+                                {s.post_url ? (
+                                  <a href={s.post_url} target="_blank" rel="noreferrer" className="truncate text-ink underline underline-offset-4">
+                                    Posted
+                                  </a>
+                                ) : (
+                                  "Posted"
+                                )}
+                              </span>
+                              <button onClick={() => act(`unmark-${p}`, () => unmarkPosted(clip.id, p))} disabled={busy !== null} className="btn btn-line btn-sm">
+                                {busy === `unmark-${p}` && <LoaderCircle className="size-3.5 animate-spin" />} Unmark
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <label className="min-w-0">
+                                <span className="sr-only">Link to the {PLATFORM_NAME[p]} post, optional</span>
+                                <input
+                                  value={links[p]}
+                                  onChange={(e) => setLinks({ ...links, [p]: e.target.value })}
+                                  placeholder="Link to the post (optional)"
+                                  inputMode="url"
+                                  disabled={blocked}
+                                  className="field h-10 w-full"
+                                />
+                              </label>
+                              <button
+                                onClick={() => act(`mark-${p}`, () => markPosted(clip.id, p, links[p]))}
+                                disabled={busy !== null || blocked}
+                                title={blocked ? "Queued or uploading there" : undefined}
+                                className="btn btn-line btn-sm h-10"
+                              >
+                                {busy === `mark-${p}` ? <LoaderCircle className="size-3.5 animate-spin" /> : <Check className="size-3.5" strokeWidth={2} />}
+                                Mark as posted
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         </motion.div>

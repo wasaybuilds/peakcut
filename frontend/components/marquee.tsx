@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 
-import type { PublishState } from "@/lib/api";
+import { fmtSlot, isQueued, type PublishState } from "@/lib/api";
 
 /** Strip stream-title clutter (live dots, emoji) so tiles carry words only. */
 export function cleanTitle(title: string | null | undefined): string {
@@ -72,15 +72,23 @@ export function BulbChase({ progress, state, count = 32 }: { progress: number; s
 
 const PLATFORM_SHORT = { youtube: "YT", instagram: "IG" } as const;
 
-/** One mark per platform in a fixed cell: hollow not posted, amber working, filled posted, struck failed. */
+/** One mark per platform in a fixed cell: hollow not posted, ringed dot queued, amber working, filled posted, struck failed. */
 export function StateMarks({ publishes }: { publishes?: Partial<Record<"youtube" | "instagram", PublishState>> }) {
   return (
     <div className="flex items-center gap-3">
       {(["youtube", "instagram"] as const).map((p) => {
         const s = publishes?.[p];
-        const kind = !s ? "none" : s.status === "done" ? "posted" : s.status === "failed" ? "failed" : "working";
+        const kind = !s ? "none" : s.status === "done" ? "posted" : s.status === "failed" ? "failed" : isQueued(s) ? "queued" : "working";
         const label =
-          kind === "none" ? "not posted" : kind === "posted" ? "posted" : kind === "failed" ? `failed: ${s?.error ?? ""}` : "uploading";
+          kind === "none"
+            ? "not posted"
+            : kind === "posted"
+              ? "posted"
+              : kind === "failed"
+                ? `failed: ${s?.error ?? ""}`
+                : kind === "queued"
+                  ? `queued for ${fmtSlot(s!.scheduled_at!)}`
+                  : "uploading";
         const mark = <span className={`mark mark-${kind}`} />;
         return (
           <span key={p} className="inline-flex items-center gap-1.5 text-[13px] font-semibold tracking-[0.12em] text-ink-mute" title={`${p}: ${label}`}>

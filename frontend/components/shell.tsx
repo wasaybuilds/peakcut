@@ -1,12 +1,12 @@
 "use client";
 
-import { Plus, Settings2, TriangleAlert } from "lucide-react";
+import { CalendarClock, Plus, Settings2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { cleanTitle } from "@/components/marquee";
-import { type Accounts, getAccounts, type Job, listJobs } from "@/lib/api";
+import { type Accounts, getAccounts, getSchedule, type Job, listJobs } from "@/lib/api";
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
@@ -54,6 +54,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [accounts, setAccounts] = useState<Accounts | null>(null);
+  const [queued, setQueued] = useState<number | null>(null);
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
@@ -75,6 +76,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
     };
     tick();
     getAccounts().then(setAccounts).catch(() => {});
+    getSchedule()
+      .then((s) => setQueued(s.queue.length))
+      .catch(() => {});
     return () => {
       alive = false;
       clearTimeout(timer);
@@ -90,6 +94,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-line bg-felt/95 px-4 backdrop-blur lg:hidden">
         <Wordmark />
         <div className="flex items-center gap-2">
+          <Link href="/queue" className="btn btn-line btn-sm" aria-label="Queue">
+            <CalendarClock className="size-4" strokeWidth={1.75} />
+          </Link>
           <Link href="/settings" className="btn btn-line btn-sm" aria-label="Accounts">
             <Settings2 className="size-4" strokeWidth={1.75} />
           </Link>
@@ -122,6 +129,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
               API offline. Start it with scripts\dev.ps1.
             </p>
           )}
+          <Link
+            href="/queue"
+            aria-current={path === "/queue" ? "page" : undefined}
+            className={`flex items-center justify-between rounded-board px-3 py-2 transition-colors ${
+              path === "/queue" ? "bg-felt-high text-ink" : "text-ink-soft hover:bg-felt-raised hover:text-ink"
+            }`}
+          >
+            <span className="inline-flex items-center gap-2">
+              <CalendarClock className="size-4" strokeWidth={1.75} /> Queue
+            </span>
+            <span className="tabular text-[13px] font-semibold tracking-[0.08em] text-ink-mute">{queued ? `${queued} QUEUED` : "EMPTY"}</span>
+          </Link>
           <Link
             href="/settings"
             aria-current={path === "/settings" ? "page" : undefined}

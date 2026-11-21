@@ -300,6 +300,10 @@ select {
 .mark-none {
   border: 1.5px solid var(--line-strong);
 }
+.mark-queued {
+  border: 1.5px solid var(--ink-soft);
+  background: radial-gradient(circle, var(--ink-soft) 0 2px, transparent 2.5px);
+}
 .mark-working {
   border: 1.5px solid var(--bulb);
   animation: bulb-head 1.2s ease-in-out infinite;

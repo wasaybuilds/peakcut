@@ -82,7 +82,23 @@ export type PublishState = {
   status: "pending" | "uploading" | "done" | "failed";
   post_url: string | null;
   error: string | null;
+  scheduled_at?: string | null; // set while waiting for a queue slot
 };
+
+/** Queued for a later slot, as opposed to uploading right now. */
+export const isQueued = (p?: PublishState | null) => !!p && p.status === "pending" && !!p.scheduled_at;
+
+export type QueueItem = {
+  clip_id: number;
+  job_id: number;
+  title: string;
+  thumb_path: string | null;
+  scheduled_at: string;
+  platforms: Platform[];
+  uploading: boolean; // its slot came and the upload is running
+};
+
+export type Schedule = { times: string[]; queue: QueueItem[]; next_slot: string };
 
 export type Accounts = {
   youtube: { client_secret: boolean; connected: boolean; channel: string | null; connecting: boolean; error: string | null };
@@ -107,8 +123,37 @@ export const saveClipMeta = (
 ) => req<ClipMeta>(`/api/clips/${clipId}/meta`, { method: "PUT", body: JSON.stringify(body) });
 export const makeCover = (clipId: number, body: { at?: number; text?: string } = {}) =>
   req<Cover>(`/api/clips/${clipId}/cover`, { method: "POST", body: JSON.stringify(body) });
-export const publishClip = (clipId: number, platforms: Platform[]) =>
-  req<{ ok: boolean; queued: number[] }>(`/api/clips/${clipId}/publish`, { method: "POST", body: JSON.stringify({ platforms }) });
+export const publishClip = (clipId: number, platforms: Platform[], when: "now" | "queue" = "now") =>
+  req<{ ok: boolean; queued: number[]; scheduled_at: string | null }>(`/api/clips/${clipId}/publish`, {
+    method: "POST",
+    body: JSON.stringify({ platforms, when }),
+  });
+export const unqueueClip = (clipId: number) => req<{ ok: boolean }>(`/api/clips/${clipId}/queue`, { method: "DELETE" });
+export const postQueuedNow = (clipId: number) => req<{ ok: boolean }>(`/api/clips/${clipId}/queue/now`, { method: "POST" });
+export const markPosted = (clipId: number, platform: Platform, url?: string) =>
+  req<{ ok: boolean }>(`/api/clips/${clipId}/posted`, { method: "POST", body: JSON.stringify({ platform, url: url?.trim() || null }) });
+export const unmarkPosted = (clipId: number, platform: Platform) =>
+  req<{ ok: boolean }>(`/api/clips/${clipId}/posted/${platform}`, { method: "DELETE" });
+export const getSchedule = () => req<Schedule>("/api/schedule");
+export const saveScheduleTimes = (times: string[]) => req<Schedule>("/api/schedule", { method: "PUT", body: JSON.stringify({ times }) });
+
+/** "Today", "Tomorrow" or "Mon 24 Nov", in this device's time zone. */
+export function fmtDay(iso: string) {
+  const d = new Date(iso);
+  const day = new Date(d);
+  day.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((day.getTime() - today.getTime()) / 86_400_000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  return d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+}
+
+export const fmtClock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+/** "Today 17:00", "Tomorrow 12:00" or "Mon 24 Nov 21:00". */
+export const fmtSlot = (iso: string) => `${fmtDay(iso)} ${fmtClock(iso)}`;
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
@@ -130,6 +175,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export const getHealth = () => req<Health>("/health");
 export const listJobs = () => req<Job[]>("/api/jobs");
 export const getJob = (id: number | string) => req<{ job: Job; clips: Clip[] }>(`/api/jobs/${id}`);
+export const deleteJob = (id: number | string) => req<{ ok: boolean }>(`/api/jobs/${id}`, { method: "DELETE" });
 export const retryJob = (id: number | string) => req<{ ok: boolean }>(`/api/jobs/${id}/retry`, { method: "POST" });
 export const createJob = (body: { url: string; clip_count?: number; layout?: string; caption_style?: string }) =>
   req<Job>("/api/jobs", { method: "POST", body: JSON.stringify(body) });
