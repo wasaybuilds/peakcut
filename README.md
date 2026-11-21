@@ -25,7 +25,7 @@ Queue clips and they post at your daily posting times:
 | Moment signals | ffmpeg loudness + scene cuts, chat spikes, replay heatmap | free |
 | Pick highlights, write titles | Z.ai GLM-Flash → SiliconFlow Qwen → Groq → OpenRouter → Gemini | free |
 | Render | ffmpeg with Intel QuickSync, ASS karaoke captions | free |
-| Publish | YouTube Data API v3, Instagram Graph API | free |
+| Publish | YouTube Data API v3, Instagram Graph API, TikTok Content Posting API (sends to your TikTok inbox) | free |
 
 Each AI step tries the next provider when one fails or hits a rate limit, so a single dead key doesn't stop a job.
 
@@ -73,7 +73,7 @@ If an import fails with `An Application Control policy has blocked this file`, p
 - [x] **M1**: pipeline (URL → captioned 9:16 MP4s). Run it from the web app or with `uv run python -m app.cli <url>`
 - [ ] **M2**: web app editor (trim, caption text and style, layout, re-render). Paste link, progress and clip grid are done.
 - [~] **M3**: smarter highlights. Done: heatmap, loudness peaks, face cam split with auto-detect and a drag-to-fix box. Still to do: chat spikes, Gemini watch mode.
-- [x] **M4**: publishing to YouTube and Instagram with AI captions and hashtags, a daily posting queue (`/queue`), and "mark as posted" for clips posted by hand. Connect accounts at `/settings`.
+- [x] **M4**: publishing to YouTube and Instagram with AI captions and hashtags, TikTok via your TikTok inbox (you post it from the app), a daily posting queue (`/queue`), and "mark as posted" for clips posted by hand. Connect accounts at `/settings`.
 - [ ] **M5**: batch jobs, campaign presets, AI voiceover intro, "safe start" violence check
 
 ## Content and monetization

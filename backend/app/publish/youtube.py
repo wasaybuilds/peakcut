@@ -9,12 +9,11 @@ import logging
 import threading
 import time
 import webbrowser
-import wsgiref.simple_server
-import wsgiref.util
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from app.config import ROOT_DIR, get_settings
+from app.publish import oauth_local
 
 log = logging.getLogger(__name__)
 
@@ -77,38 +76,6 @@ def status() -> dict:
     return out
 
 
-class _QuietHandler(wsgiref.simple_server.WSGIRequestHandler):
-    timeout = 10  # an idle connection (browser preconnect) can't hold the listener forever
-
-    def log_message(self, *args):
-        pass
-
-
-def _wait_for_redirect(server, deadline: float) -> str:
-    """Serve the local redirect until Google sends back a code or an error."""
-    result: dict[str, str] = {}
-
-    def app(environ, start_response):
-        query = parse_qs(environ.get("QUERY_STRING", ""))
-        if "code" in query or "error" in query:
-            result["uri"] = wsgiref.util.request_uri(environ)
-            body = b"PeakCut is connected to YouTube. You can close this tab."
-            if "error" in query:
-                body = b"Sign-in was cancelled. Go back to PeakCut and click Connect YouTube to try again."
-        else:
-            body = b"Waiting for Google sign-in."
-        start_response("200 OK", [("Content-Type", "text/plain; charset=utf-8")])
-        return [body]
-
-    server.set_app(app)
-    server.timeout = 1
-    while "uri" not in result:
-        if time.time() > deadline:
-            raise RuntimeError("Sign-in took too long. Click Connect YouTube to try again.")
-        server.handle_request()
-    return result["uri"]
-
-
 def start_connect() -> None:
     """Open Google's sign-in page in the browser; the redirect is caught in a background thread.
 
@@ -125,7 +92,7 @@ def start_connect() -> None:
     from google_auth_oauthlib.flow import InstalledAppFlow
 
     flow = InstalledAppFlow.from_client_secrets_file(str(client_secret_path()), SCOPES)
-    server = wsgiref.simple_server.make_server("localhost", 0, lambda e, r: [], handler_class=_QuietHandler)
+    server = oauth_local.make_server()
     flow.redirect_uri = f"http://localhost:{server.server_port}/"
     auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
     _connect_state.update(running=True, error=None, auth_url=auth_url)
@@ -133,7 +100,7 @@ def start_connect() -> None:
     def run():
         with _connect_lock:
             try:
-                uri = _wait_for_redirect(server, time.time() + CONNECT_TIMEOUT)
+                uri = oauth_local.wait_for_redirect(server, time.time() + CONNECT_TIMEOUT, "YouTube")
                 error = parse_qs(urlparse(uri).query).get("error")
                 if error:
                     raise RuntimeError(f"Google sign-in was not completed ({error[0]}).")

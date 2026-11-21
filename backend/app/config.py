@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     instagram_app_id: str = ""
     instagram_app_secret: str = ""
     instagram_graph_version: str = "v23.0"
+    tiktok_client_key: str = ""
+    tiktok_client_secret: str = ""
+    tiktok_redirect_port: int = 8788  # register http://localhost:<port>/callback/ in the TikTok app
 
     # app
     api_port: int = 8000

@@ -56,7 +56,7 @@ class Publish(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     clip_id: int = Field(foreign_key="clip.id", index=True)
     platform: str  # youtube | instagram
-    status: str = "pending"  # pending | uploading | done | failed
+    status: str = "pending"  # pending | uploading | sent (TikTok inbox) | done | failed
     scheduled_at: datetime | None = None
     post_url: str | None = None
     error: str | None = None

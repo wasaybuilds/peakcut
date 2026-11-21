@@ -5,11 +5,11 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.db import Clip, Job, Publish, get_session
 from app.pipeline import cover, ingest, metadata
-from app.publish import instagram, publisher, schedule, youtube
+from app.publish import instagram, publisher, schedule, tiktok, youtube
 
 router = APIRouter(prefix="/api")
 
-PLATFORMS = ("youtube", "instagram")
+PLATFORMS = ("youtube", "instagram", "tiktok")
 
 
 # ---- accounts --------------------------------------------------------------------
@@ -17,7 +17,7 @@ PLATFORMS = ("youtube", "instagram")
 
 @router.get("/accounts")
 def accounts():
-    return {"youtube": youtube.status(), "instagram": instagram.status()}
+    return {"youtube": youtube.status(), "instagram": instagram.status(), "tiktok": tiktok.status()}
 
 
 @router.post("/accounts/youtube/connect")
@@ -27,6 +27,21 @@ def youtube_connect():
     except RuntimeError as e:
         raise HTTPException(400, str(e)) from e
     return {"ok": True, "message": "A Google sign-in page is opening in your browser."}
+
+
+@router.post("/accounts/tiktok/connect")
+def tiktok_connect():
+    try:
+        tiktok.start_connect()
+    except RuntimeError as e:
+        raise HTTPException(400, str(e)) from e
+    return {"ok": True, "message": "A TikTok sign-in page is opening in your browser."}
+
+
+@router.delete("/accounts/tiktok")
+def tiktok_disconnect():
+    tiktok.disconnect()
+    return {"ok": True}
 
 
 @router.delete("/accounts/youtube")
@@ -184,7 +199,7 @@ def publish_clip(clip_id: int, body: PublishBody, session: Session = Depends(get
         raise HTTPException(400, "This clip hasn't finished rendering.")
     wanted = [p for p in body.platforms if p in PLATFORMS]
     if not wanted:
-        raise HTTPException(400, "Pick YouTube and/or Instagram.")
+        raise HTTPException(400, "Pick at least one of YouTube, Instagram or TikTok.")
     when = None
     if body.when == "queue":
         if any(p.scheduled_at for p in _pending(session, clip_id)):
@@ -227,7 +242,7 @@ def post_queued_now(clip_id: int, session: Session = Depends(get_session)):
 
 
 class PostedBody(BaseModel):
-    platform: str = Field(pattern="^(youtube|instagram)$")
+    platform: str = Field(pattern="^(youtube|instagram|tiktok)$")
     url: str | None = Field(default=None, max_length=500)
 
 
@@ -250,7 +265,7 @@ def mark_posted(clip_id: int, body: PostedBody, session: Session = Depends(get_s
 def unmark_posted(clip_id: int, platform: str, session: Session = Depends(get_session)):
     """Forget that a clip was posted on a platform. Doesn't touch the post itself."""
     rows = session.exec(select(Publish).where(Publish.clip_id == clip_id, Publish.platform == platform,
-                                              Publish.status.in_(["done", "failed"]))).all()  # fmt: skip
+                                              Publish.status.in_(["sent", "done", "failed"]))).all()  # fmt: skip
     for p in rows:
         session.delete(p)
     session.commit()

@@ -16,7 +16,7 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.db import Clip, Publish, get_engine
-from app.publish import instagram, schedule, youtube
+from app.publish import instagram, schedule, tiktok, youtube
 
 log = logging.getLogger(__name__)
 
@@ -59,6 +59,10 @@ def run(pub_id: int) -> None:
         elif platform == "instagram":
             cover_at = (meta.get("cover") or {}).get("at")
             url = instagram.publish(path, (meta.get("instagram") or {}).get("caption", clip.title), cover_at=cover_at)
+        elif platform == "tiktok":
+            tiktok.send_to_inbox(path)  # lands in the TikTok inbox; the creator posts it from the app
+            _set(pub_id, status="sent")
+            return
         else:
             raise RuntimeError(f"unknown platform {platform}")
         _set(pub_id, status="done", post_url=url)
