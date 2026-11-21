@@ -11,7 +11,8 @@ backend/   FastAPI + clipping pipeline (Python 3.13, uv)
   app/pipeline/       ingest (yt-dlp) -> dash (stream VOD pieces) -> transcribe -> signals -> highlights
                       -> metadata (AI captions) -> facecam -> captions (ASS) -> render (ffmpeg)
   app/llm/            free provider chain (Z.ai, SiliconFlow, Groq, OpenRouter, Gemini) with fallback
-  app/publish/        youtube.py, instagram.py, publisher.py (separate upload thread)
+  app/publish/        youtube.py, instagram.py, publisher.py (separate upload thread),
+                      schedule.py (daily posting slots in data/schedule.json; the publisher posts queued clips on time)
   app/api/            jobs.py, publish.py
 frontend/  Next.js 15 app router + Tailwind v4
   app/globals.css     design tokens and component classes (the only place colours are defined)

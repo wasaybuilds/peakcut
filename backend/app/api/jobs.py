@@ -1,4 +1,5 @@
 import re
+import shutil
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,6 +11,7 @@ from app.config import get_settings
 from app.db import Clip, Job, Publish, get_session
 from app.pipeline.captions import STYLES
 from app.pipeline.render import LAYOUTS
+from app.publish import schedule
 
 router = APIRouter(prefix="/api")
 
@@ -62,9 +64,10 @@ def get_job(job_id: int, session: Session = Depends(get_session)):
     pubs = session.exec(select(Publish).where(Publish.clip_id.in_([c.id for c in clips])).order_by(Publish.id)).all()
     by_clip: dict[int, dict] = {}
     for p in pubs:  # latest attempt per platform wins
-        by_clip.setdefault(p.clip_id, {})[p.platform] = p.model_dump(
-            include={"id", "platform", "status", "post_url", "error", "created_at"}
-        )
+        by_clip.setdefault(p.clip_id, {})[p.platform] = {
+            **p.model_dump(include={"id", "platform", "status", "post_url", "error", "created_at"}),
+            "scheduled_at": schedule.iso(p.scheduled_at),
+        }
     return {"job": job, "clips": [{**c.model_dump(), "publishes": by_clip.get(c.id, {})} for c in clips]}
 
 
@@ -132,4 +135,37 @@ def retry_job(job_id: int, session: Session = Depends(get_session)):
     session.add(job)
     session.commit()
     worker.enqueue(job_id)
+    return {"ok": True}
+
+
+@router.delete("/jobs/{job_id}")
+def delete_job(job_id: int, session: Session = Depends(get_session)):
+    """Delete a job, its clips, PeakCut's post records and its files. Posts already on YouTube or
+    Instagram stay there. The video's download and analysis cache go only when no other job uses it."""
+    job = session.get(Job, job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job.status in ("queued", "running"):
+        raise HTTPException(400, "This job is still running. Wait for it to finish or fail first.")
+    clips = session.exec(select(Clip).where(Clip.job_id == job_id)).all()
+    pubs = session.exec(select(Publish).where(Publish.clip_id.in_([c.id for c in clips]))).all() if clips else []
+    if any(p.status in ("pending", "uploading") for p in pubs):
+        raise HTTPException(400, "A clip from this job is queued or uploading. Remove it from the queue first.")
+
+    for row in [*pubs, *clips, job]:
+        session.delete(row)
+    session.commit()
+
+    settings = get_settings()
+    vid = job.video_id
+    if vid and re.fullmatch(r"[\w-]{6,20}", vid):  # the id becomes a folder name; never trust it blindly
+        folder = settings.renders_dir / vid
+        for f in folder.glob(f"job{job_id}_*"):
+            f.unlink(missing_ok=True)
+        if folder.is_dir() and not any(folder.iterdir()):
+            folder.rmdir()
+        if not session.exec(select(Job).where(Job.video_id == vid)).first():
+            shutil.rmtree(settings.cache_dir / vid, ignore_errors=True)
+            for f in settings.downloads_dir.glob(f"{vid}*"):
+                shutil.rmtree(f, ignore_errors=True) if f.is_dir() else f.unlink(missing_ok=True)
     return {"ok": True}

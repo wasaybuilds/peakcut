@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.db import Clip, Job, Publish, get_session
 from app.pipeline import cover, ingest, metadata
-from app.publish import instagram, publisher, youtube
+from app.publish import instagram, publisher, schedule, youtube
 
 router = APIRouter(prefix="/api")
 
@@ -160,31 +160,141 @@ def make_cover(clip_id: int, body: CoverBody, session: Session = Depends(get_ses
 
 class PublishBody(BaseModel):
     platforms: list[str]
+    when: str = Field(default="now", pattern="^(now|queue)$")  # queue = next free posting slot
+
+
+def _clip_or_404(session: Session, clip_id: int) -> Clip:
+    clip = session.get(Clip, clip_id)
+    if not clip:
+        raise HTTPException(404, "Clip not found")
+    return clip
+
+
+def _pending(session: Session, clip_id: int, platform: str | None = None):
+    q = select(Publish).where(Publish.clip_id == clip_id, Publish.status.in_(["pending", "uploading"]))
+    if platform:
+        q = q.where(Publish.platform == platform)
+    return session.exec(q).all()
 
 
 @router.post("/clips/{clip_id}/publish")
 def publish_clip(clip_id: int, body: PublishBody, session: Session = Depends(get_session)):
-    clip = session.get(Clip, clip_id)
-    if not clip:
-        raise HTTPException(404, "Clip not found")
+    clip = _clip_or_404(session, clip_id)
     if not clip.file_path:
         raise HTTPException(400, "This clip hasn't finished rendering.")
     wanted = [p for p in body.platforms if p in PLATFORMS]
     if not wanted:
         raise HTTPException(400, "Pick YouTube and/or Instagram.")
+    when = None
+    if body.when == "queue":
+        if any(p.scheduled_at for p in _pending(session, clip_id)):
+            raise HTTPException(400, "This clip is already in the queue.")
+        when = schedule.next_free_slot(publisher.taken_slots(session))
     created = []
     for platform in wanted:
-        busy = session.exec(select(Publish).where(Publish.clip_id == clip_id, Publish.platform == platform,
-                                                  Publish.status.in_(["pending", "uploading"]))).first()  # fmt: skip
-        if busy:
-            continue
-        pub = Publish(clip_id=clip_id, platform=platform)
+        if _pending(session, clip_id, platform):
+            continue  # already uploading or waiting
+        pub = Publish(clip_id=clip_id, platform=platform, scheduled_at=when)
         session.add(pub)
         session.commit()
         session.refresh(pub)
-        publisher.enqueue(pub.id)
+        if when is None:
+            publisher.enqueue(pub.id)
         created.append(pub.id)
-    return {"ok": True, "queued": created}
+    return {"ok": True, "queued": created, "scheduled_at": schedule.iso(when)}
+
+
+@router.delete("/clips/{clip_id}/queue")
+def unqueue_clip(clip_id: int, session: Session = Depends(get_session)):
+    """Take a clip out of the posting queue (uploads already running are left alone)."""
+    rows = [p for p in _pending(session, clip_id) if p.status == "pending" and p.scheduled_at]
+    for p in rows:
+        session.delete(p)
+    session.commit()
+    return {"ok": True, "removed": len(rows)}
+
+
+@router.post("/clips/{clip_id}/queue/now")
+def post_queued_now(clip_id: int, session: Session = Depends(get_session)):
+    rows = [p for p in _pending(session, clip_id) if p.status == "pending" and p.scheduled_at]
+    for p in rows:
+        p.scheduled_at = None
+        session.add(p)
+    session.commit()
+    for p in rows:
+        publisher.enqueue(p.id)
+    return {"ok": True, "started": len(rows)}
+
+
+class PostedBody(BaseModel):
+    platform: str = Field(pattern="^(youtube|instagram)$")
+    url: str | None = Field(default=None, max_length=500)
+
+
+@router.post("/clips/{clip_id}/posted")
+def mark_posted(clip_id: int, body: PostedBody, session: Session = Depends(get_session)):
+    """Record a post made outside PeakCut (for example from the Instagram app)."""
+    _clip_or_404(session, clip_id)
+    url = (body.url or "").strip() or None
+    if url and not url.startswith(("https://", "http://")):
+        raise HTTPException(400, "The link should start with https://")
+    if _pending(session, clip_id, body.platform):
+        raise HTTPException(400, "This clip is queued or uploading there. Remove it from the queue first.")
+    pub = Publish(clip_id=clip_id, platform=body.platform, status="done", post_url=url)
+    session.add(pub)
+    session.commit()
+    return {"ok": True}
+
+
+@router.delete("/clips/{clip_id}/posted/{platform}")
+def unmark_posted(clip_id: int, platform: str, session: Session = Depends(get_session)):
+    """Forget that a clip was posted on a platform. Doesn't touch the post itself."""
+    rows = session.exec(select(Publish).where(Publish.clip_id == clip_id, Publish.platform == platform,
+                                              Publish.status.in_(["done", "failed"]))).all()  # fmt: skip
+    for p in rows:
+        session.delete(p)
+    session.commit()
+    return {"ok": True, "removed": len(rows)}
+
+
+# ---- posting schedule -----------------------------------------------------------
+
+
+class ScheduleBody(BaseModel):
+    times: list[str]
+
+
+def _queue_view(session: Session) -> list[dict]:
+    rows = session.exec(select(Publish).where(Publish.status.in_(["pending", "uploading"]),
+                                              Publish.scheduled_at.is_not(None)).order_by(Publish.scheduled_at)).all()  # fmt: skip
+    items: dict[tuple, dict] = {}
+    for p in rows:
+        key = (p.clip_id, p.scheduled_at)
+        if key not in items:
+            clip = session.get(Clip, p.clip_id)
+            if not clip:
+                continue
+            items[key] = {"clip_id": clip.id, "job_id": clip.job_id, "title": clip.title, "thumb_path": clip.thumb_path,
+                          "scheduled_at": schedule.iso(p.scheduled_at), "platforms": [], "uploading": False}  # fmt: skip
+        items[key]["platforms"].append(p.platform)
+        items[key]["uploading"] |= p.status == "uploading"
+    return list(items.values())
+
+
+@router.get("/schedule")
+def get_schedule(session: Session = Depends(get_session)):
+    return {"times": schedule.get_times(), "queue": _queue_view(session),
+            "next_slot": schedule.iso(schedule.next_free_slot(publisher.taken_slots(session)))}  # fmt: skip
+
+
+@router.put("/schedule")
+def put_schedule(body: ScheduleBody, session: Session = Depends(get_session)):
+    """Change the daily posting times. Clips already queued keep their slots."""
+    try:
+        schedule.set_times(body.times)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    return get_schedule(session)
 
 
 @router.get("/clips/{clip_id}/publishes")
