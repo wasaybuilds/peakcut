@@ -4,6 +4,18 @@ Paste a YouTube link → AI finds the best moments → get 9:16 clips with anima
 
 It runs on a normal laptop with no NVIDIA GPU, and every AI service it uses has a free tier.
 
+## What it looks like
+
+![A finished job: six face cam clips from a 24-hour stream, each with a viral score, captions and Post, download and cover buttons](docs/images/job.png)
+
+Paste a link, pick how many clips you want and a layout:
+
+![The home page: a YouTube link field, clip count, Find clips button and four layout choices](docs/images/home.png)
+
+Queue clips and they post at your daily posting times:
+
+![The queue page: five daily posting times and the upcoming posts with Post now and Remove buttons](docs/images/queue.png)
+
 ## How it works
 
 | Step | Tool | Cost |
@@ -51,7 +63,7 @@ So the project works around it:
 - The venv is built on the signed python.org Python 3.13.
 - Tools run as modules, never through the `.exe` launchers uv creates (those are blocked). For example: `uv run python -m pytest` and `uv run python -m uvicorn app.main:app`.
 - `backend/pyproject.toml` pins `pydantic-core` (and anything else that gets blocked) to versions Smart App Control accepts.
-- OpenCV is not used at all. ffmpeg handles scene detection instead.
+- `opencv-python-headless` (used to find the face cam) is pinned to 4.11, because newer wheels are blocked.
 
 If an import fails with `An Application Control policy has blocked this file`, pin that package to an older release.
 
@@ -61,7 +73,7 @@ If an import fails with `An Application Control policy has blocked this file`, p
 - [x] **M1**: pipeline (URL → captioned 9:16 MP4s). Run it from the web app or with `uv run python -m app.cli <url>`
 - [ ] **M2**: web app editor (trim, caption text and style, layout, re-render). Paste link, progress and clip grid are done.
 - [~] **M3**: smarter highlights. Done: heatmap, loudness peaks, face cam split with auto-detect and a drag-to-fix box. Still to do: chat spikes, Gemini watch mode.
-- [x] **M4**: publishing to YouTube and Instagram with AI captions and hashtags. Connect accounts at `/settings`.
+- [x] **M4**: publishing to YouTube and Instagram with AI captions and hashtags, a daily posting queue (`/queue`), and "mark as posted" for clips posted by hand. Connect accounts at `/settings`.
 - [ ] **M5**: batch jobs, campaign presets, AI voiceover intro, "safe start" violence check
 
 ## Content and monetization

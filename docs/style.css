@@ -62,3 +62,5 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
 footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--ink-mute); font-size: 15px; }
 footer a { color: var(--ink-mute); }
 code { font-size: 0.82em; color: var(--ink); }
+main.wide { max-width: 64rem; }
+.shot { display: block; width: 100%; height: auto; margin: 2rem 0 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); }
