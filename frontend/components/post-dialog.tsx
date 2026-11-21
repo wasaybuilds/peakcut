@@ -18,6 +18,7 @@ import {
   isQueued,
   markPosted,
   type Platform,
+  PLATFORMS,
   postQueuedNow,
   publishClip,
   saveClipMeta,
@@ -26,7 +27,8 @@ import {
   writeClipCaptions,
 } from "@/lib/api";
 
-const PLATFORM_NAME: Record<Platform, string> = { youtube: "YouTube Shorts", instagram: "Instagram Reels" };
+const PLATFORM_NAME: Record<Platform, string> = { youtube: "YouTube Shorts", instagram: "Instagram Reels", tiktok: "TikTok" };
+const PLATFORM_WORD: Record<Platform, string> = { youtube: "YouTube", instagram: "Instagram", tiktok: "TikTok" };
 
 type Busy = "ai" | "post" | "queue" | "unqueue" | "now" | `mark-${Platform}` | `unmark-${Platform}`;
 
@@ -52,11 +54,11 @@ export function PostDialog({
   const [privacy, setPrivacy] = useState("public");
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
-  const [targets, setTargets] = useState<Record<Platform, boolean>>({ youtube: true, instagram: true });
+  const [targets, setTargets] = useState<Record<Platform, boolean>>({ youtube: true, instagram: true, tiktok: false });
   const [busy, setBusy] = useState<Busy | null>(null);
   const [nextSlot, setNextSlot] = useState<string | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
-  const [links, setLinks] = useState<Record<Platform, string>>({ youtube: "", instagram: "" });
+  const [links, setLinks] = useState<Record<Platform, string>>({ youtube: "", instagram: "", tiktok: "" });
   const [err, setErr] = useState<string | null>(null);
   const [side, setSide] = useState<"clip" | "cover">("clip");
 
@@ -75,13 +77,13 @@ export function PostDialog({
     getAccounts()
       .then((a) => {
         setAccounts(a);
-        setTargets({ youtube: a.youtube.connected, instagram: a.instagram.connected });
+        setTargets({ youtube: a.youtube.connected, instagram: a.instagram.connected, tiktok: !!a.tiktok?.connected });
       })
       .catch(() => setAccounts(null));
     getSchedule()
       .then((sch) => setNextSlot(sch.next_slot))
       .catch(() => setNextSlot(null));
-    setLinks({ youtube: "", instagram: "" });
+    setLinks({ youtube: "", instagram: "", tiktok: "" });
     // focus the dialog so keyboard and screen-reader users land inside it
     requestAnimationFrame(() => panel.current?.focus());
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -133,8 +135,10 @@ export function PostDialog({
 
   async function post(when: "now" | "queue") {
     const platforms = (Object.keys(targets) as Platform[]).filter((p) => targets[p]);
-    if (!platforms.length) return setErr("Pick YouTube, Instagram or both.");
+    if (!platforms.length) return setErr("Pick at least one place to post.");
     setBusy(when === "now" ? "post" : "queue");
+    // TikTok's inbox upload carries no caption: have it ready to paste in the TikTok app
+    if (targets.tiktok) navigator.clipboard?.writeText(caption).catch(() => {});
     setErr(null);
     try {
       await saveClipMeta(clip.id, {
@@ -167,7 +171,8 @@ export function PostDialog({
     }
   }
 
-  const noAccounts = accounts && !accounts.youtube.connected && !accounts.instagram.connected;
+  const noAccounts = accounts && !accounts.youtube.connected && !accounts.instagram.connected && !accounts.tiktok?.connected;
+  const anyTarget = PLATFORMS.some((p) => targets[p]);
   const queuedOn = (Object.keys(clip.publishes ?? {}) as Platform[]).filter((p) => isQueued(clip.publishes?.[p]));
   const queuedAt = queuedOn.length ? (clip.publishes?.[queuedOn[0]]?.scheduled_at ?? null) : null;
 
@@ -240,7 +245,7 @@ export function PostDialog({
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-board border border-line-strong px-3 py-2.5">
                   <p className="flex items-center gap-2 text-[15px] text-ink">
                     <CalendarClock className="size-4 shrink-0" strokeWidth={1.75} />
-                    Queued for {fmtSlot(queuedAt)} on {queuedOn.map((p) => (p === "youtube" ? "YouTube" : "Instagram")).join(" and ")}
+                    Queued for {fmtSlot(queuedAt)} on {queuedOn.map((p) => PLATFORM_WORD[p]).join(" and ")}
                   </p>
                   <div className="flex gap-1.5">
                     <button onClick={() => act("now", () => postQueuedNow(clip.id), true)} disabled={busy !== null} className="btn btn-line btn-sm">
@@ -257,7 +262,7 @@ export function PostDialog({
                 <p className="mt-4 rounded-board border border-line-strong px-3 py-2.5 text-[15px] text-ink-soft">
                   No accounts connected yet.{" "}
                   <Link href="/settings" className="text-ink underline underline-offset-4">
-                    Connect YouTube or Instagram
+                    Connect an account
                   </Link>{" "}
                   first.
                 </p>
@@ -265,10 +270,15 @@ export function PostDialog({
 
               <fieldset className="mt-5">
                 <legend className="label">Post to</legend>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {(["youtube", "instagram"] as Platform[]).map((p) => {
-                    const ok = p === "youtube" ? accounts?.youtube.connected : accounts?.instagram.connected;
-                    const who = p === "youtube" ? accounts?.youtube.channel : accounts?.instagram.username && `@${accounts.instagram.username}`;
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  {PLATFORMS.map((p) => {
+                    const ok = p === "youtube" ? accounts?.youtube.connected : p === "instagram" ? accounts?.instagram.connected : accounts?.tiktok?.connected;
+                    const who =
+                      p === "youtube"
+                        ? accounts?.youtube.channel
+                        : p === "instagram"
+                          ? accounts?.instagram.username && `@${accounts.instagram.username}`
+                          : (accounts?.tiktok?.name ?? "Connected");
                     const on = targets[p] && !!ok;
                     return (
                       <label
@@ -279,7 +289,7 @@ export function PostDialog({
                       >
                         <input type="checkbox" disabled={!ok} checked={on} onChange={(e) => setTargets({ ...targets, [p]: e.target.checked })} className="size-4 accent-[var(--ink)]" />
                         <span className="min-w-0">
-                          <span className="block text-[16px] font-bold uppercase tracking-[0.06em]">{p === "youtube" ? "YouTube Shorts" : "Instagram Reels"}</span>
+                          <span className="block text-[16px] font-bold uppercase tracking-[0.06em]">{PLATFORM_NAME[p]}</span>
                           <span className="block truncate text-[14px] text-ink-mute">{ok ? who : "Not connected"}</span>
                         </span>
                       </label>
@@ -287,6 +297,12 @@ export function PostDialog({
                   })}
                 </div>
               </fieldset>
+              {targets.tiktok && (
+                <p className="mt-2 text-[14px] leading-snug text-ink-mute">
+                  TikTok gets the clip in your TikTok inbox. Open the notification in the TikTok app, paste the caption (PeakCut copies the Instagram caption
+                  when you post) and publish it there. TikTok allows 5 waiting uploads a day.
+                </p>
+              )}
 
               <div className="mt-6 flex items-center justify-between">
                 <span className="label">Post text</span>
@@ -327,14 +343,14 @@ export function PostDialog({
               <div className="mt-6 grid gap-2 sm:grid-cols-2">
                 <button
                   onClick={() => post("queue")}
-                  disabled={busy !== null || !!queuedAt || (!targets.youtube && !targets.instagram)}
+                  disabled={busy !== null || !!queuedAt || !anyTarget}
                   className="btn btn-line h-12"
                   title={queuedAt ? "Already in the queue" : undefined}
                 >
                   {busy === "queue" ? <LoaderCircle className="size-4 animate-spin" /> : <CalendarClock className="size-4" strokeWidth={1.75} />}
                   {nextSlot && !queuedAt ? `Queue for ${fmtSlot(nextSlot)}` : "Add to queue"}
                 </button>
-                <button onClick={() => post("now")} disabled={busy !== null || (!targets.youtube && !targets.instagram)} className="btn btn-primary h-12">
+                <button onClick={() => post("now")} disabled={busy !== null || !anyTarget} className="btn btn-primary h-12">
                   {busy === "post" ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" strokeWidth={2} />}
                   Post now
                 </button>
@@ -352,7 +368,7 @@ export function PostDialog({
                 {manualOpen && (
                   <div className="mt-3 space-y-2">
                     <p className="text-[14px] leading-snug text-ink-mute">Mark the clip as posted so it shows as done here. PeakCut won&apos;t upload it.</p>
-                    {(["youtube", "instagram"] as Platform[]).map((p) => {
+                    {PLATFORMS.map((p) => {
                       const s = clip.publishes?.[p];
                       const done = s?.status === "done";
                       const blocked = !!s && (s.status === "uploading" || s.status === "pending");

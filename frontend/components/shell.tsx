@@ -86,7 +86,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }, [path]);
 
   const activeId = path.startsWith("/jobs/") ? Number(path.split("/")[2]) : null;
-  const connected = [accounts?.youtube.connected && "YouTube", accounts?.instagram.connected && "Instagram"].filter(Boolean);
+  const connected = [
+    accounts?.youtube.connected && "YT",
+    accounts?.instagram.connected && "IG",
+    accounts?.tiktok?.connected && "TT",
+  ].filter(Boolean);
 
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[272px_1fr]">

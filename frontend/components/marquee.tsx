@@ -70,15 +70,25 @@ export function BulbChase({ progress, state, count = 32 }: { progress: number; s
   );
 }
 
-const PLATFORM_SHORT = { youtube: "YT", instagram: "IG" } as const;
+const PLATFORM_SHORT = { youtube: "YT", instagram: "IG", tiktok: "TT" } as const;
 
-/** One mark per platform in a fixed cell: hollow not posted, ringed dot queued, amber working, filled posted, struck failed. */
-export function StateMarks({ publishes }: { publishes?: Partial<Record<"youtube" | "instagram", PublishState>> }) {
+/** One mark per platform in a fixed cell: hollow not posted, ringed dot queued, amber working, half filled sent to the TikTok inbox, filled posted, struck failed. */
+export function StateMarks({ publishes }: { publishes?: Partial<Record<"youtube" | "instagram" | "tiktok", PublishState>> }) {
   return (
     <div className="flex items-center gap-3">
-      {(["youtube", "instagram"] as const).map((p) => {
+      {(["youtube", "instagram", "tiktok"] as const).map((p) => {
         const s = publishes?.[p];
-        const kind = !s ? "none" : s.status === "done" ? "posted" : s.status === "failed" ? "failed" : isQueued(s) ? "queued" : "working";
+        const kind = !s
+          ? "none"
+          : s.status === "done"
+            ? "posted"
+            : s.status === "sent"
+              ? "sent"
+              : s.status === "failed"
+                ? "failed"
+                : isQueued(s)
+                  ? "queued"
+                  : "working";
         const label =
           kind === "none"
             ? "not posted"
@@ -88,7 +98,9 @@ export function StateMarks({ publishes }: { publishes?: Partial<Record<"youtube"
                 ? `failed: ${s?.error ?? ""}`
                 : kind === "queued"
                   ? `queued for ${fmtSlot(s!.scheduled_at!)}`
-                  : "uploading";
+                  : kind === "sent"
+                    ? "in your TikTok inbox, post it from the TikTok app"
+                    : "uploading";
         const mark = <span className={`mark mark-${kind}`} />;
         return (
           <span key={p} className="inline-flex items-center gap-1.5 text-[13px] font-semibold tracking-[0.12em] text-ink-mute" title={`${p}: ${label}`}>

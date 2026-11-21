@@ -65,7 +65,9 @@ export type Clip = {
   publishes?: Partial<Record<Platform, PublishState>>;
 };
 
-export type Platform = "youtube" | "instagram";
+export type Platform = "youtube" | "instagram" | "tiktok";
+
+export const PLATFORMS: Platform[] = ["youtube", "instagram", "tiktok"];
 
 export type Cover = { path: string; at: number; text: string };
 
@@ -79,7 +81,7 @@ export type ClipMeta = {
 export type PublishState = {
   id: number;
   platform: Platform;
-  status: "pending" | "uploading" | "done" | "failed";
+  status: "pending" | "uploading" | "sent" | "done" | "failed"; // sent = in the TikTok inbox, posted from the app
   post_url: string | null;
   error: string | null;
   scheduled_at?: string | null; // set while waiting for a queue slot
@@ -103,6 +105,7 @@ export type Schedule = { times: string[]; queue: QueueItem[]; next_slot: string 
 export type Accounts = {
   youtube: { client_secret: boolean; connected: boolean; channel: string | null; connecting: boolean; error: string | null };
   instagram: { connected: boolean; username: string | null; error: string | null };
+  tiktok: { configured: boolean; connected: boolean; name: string | null; connecting: boolean; error: string | null; redirect_uri: string };
 };
 
 export const getAccounts = () => req<Accounts>("/api/accounts");
@@ -113,6 +116,8 @@ export const connectInstagram = (access_token: string, account_id?: string) =>
     method: "POST",
     body: JSON.stringify({ access_token, account_id: account_id?.trim() || null }),
   });
+export const connectTikTok = () => req<{ ok: boolean; message: string }>("/api/accounts/tiktok/connect", { method: "POST" });
+export const disconnectTikTok = () => req<{ ok: boolean }>("/api/accounts/tiktok", { method: "DELETE" });
 export const disconnectInstagram = () => req<{ ok: boolean }>("/api/accounts/instagram", { method: "DELETE" });
 
 export const writeJobCaptions = (jobId: number) => req<{ ok: boolean }>(`/api/jobs/${jobId}/captions`, { method: "POST" });

@@ -4,7 +4,16 @@ import { Check, ExternalLink, LoaderCircle, Unplug } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { LetterTitle } from "@/components/marquee";
-import { type Accounts, connectInstagram, connectYouTube, disconnectInstagram, disconnectYouTube, getAccounts } from "@/lib/api";
+import {
+  type Accounts,
+  connectInstagram,
+  connectTikTok,
+  connectYouTube,
+  disconnectInstagram,
+  disconnectTikTok,
+  disconnectYouTube,
+  getAccounts,
+} from "@/lib/api";
 
 export default function SettingsPage() {
   const [acc, setAcc] = useState<Accounts | null>(null);
@@ -18,12 +27,13 @@ export default function SettingsPage() {
     refresh();
   }, [refresh]);
 
-  // poll while the Google sign-in tab is open
+  // poll while a Google or TikTok sign-in tab is open
+  const signingIn = !!acc?.youtube.connecting || !!acc?.tiktok?.connecting;
   useEffect(() => {
-    if (!acc?.youtube.connecting) return;
+    if (!signingIn) return;
     const t = setInterval(refresh, 2000);
     return () => clearInterval(t);
-  }, [acc?.youtube.connecting, refresh]);
+  }, [signingIn, refresh]);
 
   async function act(name: string, fn: () => Promise<unknown>) {
     setBusy(name);
@@ -40,13 +50,14 @@ export default function SettingsPage() {
 
   const yt = acc?.youtube;
   const ig = acc?.instagram;
+  const tt = acc?.tiktok;
 
   return (
     <div className="mx-auto max-w-[980px] px-4 pb-24 pt-6 sm:px-8 lg:pt-10">
       <section className="felt-grooves rounded-board border border-line px-5 pb-6 pt-7 sm:px-8">
         <LetterTitle text="Accounts" />
         <p className="mt-5 max-w-[62ch] text-[18px] text-ink-soft">
-          Connect where your clips get posted. Both use the official free APIs, and your tokens stay on this computer.
+          Connect where your clips get posted. All three use the official free APIs, and your tokens stay on this computer.
         </p>
       </section>
       {err && <p className="mt-4 text-[15px] text-fail">{err}</p>}
@@ -169,6 +180,52 @@ export default function SettingsPage() {
             </form>
           </>
         )}
+      </Account>
+
+      <Account
+        name="TikTok"
+        status={tt?.connected ? (tt.name ?? "Connected") : tt?.configured ? "Ready to connect" : "Needs a TikTok developer app first"}
+        connected={!!tt?.connected}
+        error={tt?.error}
+        action={
+          tt?.connected ? (
+            <button onClick={() => act("tt-off", disconnectTikTok)} className="btn btn-line btn-sm">
+              <Unplug className="size-4" strokeWidth={1.75} /> Disconnect
+            </button>
+          ) : (
+            <button disabled={!tt?.configured || tt?.connecting || busy !== null} onClick={() => act("tt", connectTikTok)} className="btn btn-primary">
+              {tt?.connecting && <LoaderCircle className="size-4 animate-spin" />}
+              {tt?.connecting ? "Finish in your browser" : "Connect TikTok"}
+            </button>
+          )
+        }
+      >
+        {!tt?.connected && (
+          <Steps>
+            <li>
+              Log in to <A href="https://developers.tiktok.com/apps">TikTok for Developers</A> with your TikTok account and create an app. Use the PeakCut{" "}
+              <A href="https://wasaybuilds.github.io/peakcut/terms.html">terms</A> and <A href="https://wasaybuilds.github.io/peakcut/privacy.html">privacy</A>{" "}
+              pages, and tick the <b>Desktop</b> platform.
+            </li>
+            <li>
+              Add the products <b>Login Kit</b> and <b>Content Posting API</b>, with the scopes <b>user.info.basic</b> and <b>video.upload</b>. Leave Direct Post
+              off.
+            </li>
+            <li>
+              In Login Kit, add the redirect URI <code className="rounded-[2px] bg-felt-high px-1.5 py-0.5 text-[15px] text-ink">{tt?.redirect_uri ?? "http://localhost:8788/callback/"}</code>.
+            </li>
+            <li>
+              To test before TikTok reviews the app, open <b>Sandbox</b> and add your TikTok account as a target user. Otherwise submit the app for review.
+            </li>
+            <li>
+              Put the client key and secret in <code className="rounded-[2px] bg-felt-high px-1.5 py-0.5 text-[15px] text-ink">.env</code> as <code className="rounded-[2px] bg-felt-high px-1.5 py-0.5 text-[15px] text-ink">TIKTOK_CLIENT_KEY</code> and <code className="rounded-[2px] bg-felt-high px-1.5 py-0.5 text-[15px] text-ink">TIKTOK_CLIENT_SECRET</code>, restart PeakCut, then click Connect TikTok.
+            </li>
+          </Steps>
+        )}
+        <p className="mt-4 text-[15px] leading-snug text-ink-mute">
+          PeakCut sends clips to your TikTok inbox. Open the notification in the TikTok app, paste the caption and post it there. TikTok allows 5 waiting
+          uploads a day.
+        </p>
       </Account>
     </div>
   );

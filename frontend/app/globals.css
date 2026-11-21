@@ -304,6 +304,10 @@ select {
   border: 1.5px solid var(--ink-soft);
   background: radial-gradient(circle, var(--ink-soft) 0 2px, transparent 2.5px);
 }
+.mark-sent {
+  border: 1.5px solid var(--ink-soft);
+  background: linear-gradient(to top, var(--ink-soft) 50%, transparent 50%);
+}
 .mark-working {
   border: 1.5px solid var(--bulb);
   animation: bulb-head 1.2s ease-in-out infinite;

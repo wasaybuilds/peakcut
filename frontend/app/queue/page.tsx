@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { cleanTitle, LetterTitle } from "@/components/marquee";
 import { fileUrl, fmtClock, fmtDay, fmtSlot, getSchedule, postQueuedNow, type QueueItem, saveScheduleTimes, type Schedule, unqueueClip } from "@/lib/api";
 
-const PLATFORM_SHORT = { youtube: "YT", instagram: "IG" } as const;
+const PLATFORM_SHORT = { youtube: "YT", instagram: "IG", tiktok: "TT" } as const;
 
 /** Group queue items under a day heading ("Today", "Tomorrow", "Mon 24 Nov"). */
 function byDay(items: QueueItem[]) {
