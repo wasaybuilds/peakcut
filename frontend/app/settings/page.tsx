@@ -212,7 +212,7 @@ export default function SettingsPage() {
               off.
             </li>
             <li>
-              In Login Kit, add the redirect URI <code className="rounded-[2px] bg-felt-high px-1.5 py-0.5 text-[15px] text-ink">{tt?.redirect_uri ?? "http://localhost:8788/callback/"}</code>.
+              In Login Kit, add the redirect URI <code className="rounded-[2px] bg-felt-high px-1.5 py-0.5 text-[15px] text-ink">{tt?.redirect_uri ?? "http://127.0.0.1:8788/callback/"}</code>.
             </li>
             <li>
               To test before TikTok reviews the app, open <b>Sandbox</b> and add your TikTok account as a target user. Otherwise submit the app for review.

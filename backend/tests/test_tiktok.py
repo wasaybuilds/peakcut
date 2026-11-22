@@ -36,7 +36,7 @@ def test_pkce_is_hex_sha256_and_auth_url_has_the_documented_params(keys):
     q = parse_qs(urlparse(tiktok.auth_url("st", challenge)).query)
     assert q["client_key"] == ["ck_test"] and q["response_type"] == ["code"]
     assert q["scope"] == ["user.info.basic,video.upload"] and q["code_challenge_method"] == ["S256"]
-    assert q["redirect_uri"] == [f"http://localhost:{keys.tiktok_redirect_port}/callback/"]
+    assert q["redirect_uri"] == [f"http://127.0.0.1:{keys.tiktok_redirect_port}/callback/"]
     assert "client_secret" not in q  # never in the browser URL
 
 
@@ -50,7 +50,7 @@ def test_exchange_checks_state_and_scope_then_saves_tokens(keys, monkeypatch):
 
     monkeypatch.setattr(httpx, "post", fake_post)
     monkeypatch.setattr(httpx, "get", lambda *a, **k: FakeResponse({"data": {"user": {"display_name": "mostreplayed"}}, "error": OK}))
-    cb = "http://localhost:8788/callback/?code=abc%2A&scopes=video.upload&state=good"
+    cb = "http://127.0.0.1:8788/callback/?code=abc%2A&scopes=video.upload&state=good"
 
     with pytest.raises(RuntimeError, match="state"):
         tiktok.exchange(cb.replace("good", "evil"), "good", "ver")
@@ -59,7 +59,7 @@ def test_exchange_checks_state_and_scope_then_saves_tokens(keys, monkeypatch):
     assert data["display_name"] == "mostreplayed" and tiktok.status()["connected"]
 
     with pytest.raises(RuntimeError, match="cancel|not completed"):
-        tiktok.exchange("http://localhost:8788/callback/?error=access_denied&state=good", "good", "ver")
+        tiktok.exchange("http://127.0.0.1:8788/callback/?error=access_denied&state=good", "good", "ver")
 
 
 def test_exchange_refuses_a_token_without_video_upload(keys, monkeypatch):

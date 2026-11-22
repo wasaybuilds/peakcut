@@ -6,7 +6,7 @@ like Direct Post, which only allows private posts until TikTok audits the app, a
 approve Direct Post for personal upload tools anyway. Limit: 5 pending inbox uploads per 24 hours.
 
 Setup: a TikTok developer app with Login Kit (Desktop) and the Content Posting API, scopes
-user.info.basic and video.upload, and the redirect URI http://localhost:<port>/callback/. The
+user.info.basic and video.upload, and the redirect URI http://127.0.0.1:<port>/callback/. The
 client key and secret go in .env (TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET), never in the repo.
 """
 
@@ -40,7 +40,7 @@ _connect_state = {"running": False, "error": None, "auth_url": None}
 
 
 def redirect_uri() -> str:
-    return f"http://localhost:{get_settings().tiktok_redirect_port}/callback/"
+    return f"http://127.0.0.1:{get_settings().tiktok_redirect_port}/callback/"  # desktop: localhost or 127.0.0.1; the form only takes the IP
 
 
 def configured() -> bool:
@@ -140,7 +140,7 @@ def start_connect() -> None:
             webbrowser.open(_connect_state["auth_url"], new=1)
         return
     try:
-        server = oauth_local.make_server(get_settings().tiktok_redirect_port)
+        server = oauth_local.make_server(get_settings().tiktok_redirect_port, host="127.0.0.1")
     except OSError as e:
         raise RuntimeError(f"Port {get_settings().tiktok_redirect_port} is busy, so TikTok can't redirect back: {e}") from e
     state, (verifier, challenge) = secrets.token_urlsafe(24), _pkce()
