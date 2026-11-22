@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { CalendarClock, Check, ChevronDown, LoaderCircle, Send, Sparkles, X } from "lucide-react";
+import { CalendarClock, Check, ChevronDown, Copy, LoaderCircle, Send, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -22,6 +22,7 @@ import {
   postQueuedNow,
   publishClip,
   saveClipMeta,
+  tiktokCaption,
   unmarkPosted,
   unqueueClip,
   writeClipCaptions,
@@ -53,6 +54,8 @@ export function PostDialog({
   const [description, setDescription] = useState("");
   const [privacy, setPrivacy] = useState("public");
   const [caption, setCaption] = useState("");
+  const [ttCaption, setTtCaption] = useState("");
+  const [copied, setCopied] = useState(false);
   const [tags, setTags] = useState("");
   const [targets, setTargets] = useState<Record<Platform, boolean>>({ youtube: true, instagram: true, tiktok: false });
   const [busy, setBusy] = useState<Busy | null>(null);
@@ -67,6 +70,7 @@ export function PostDialog({
     setDescription(meta.youtube?.description ?? "");
     setPrivacy(meta.youtube?.privacy ?? "public");
     setCaption(meta.instagram?.caption ?? clip.title);
+    setTtCaption(tiktokCaption(meta, clip.title));
     setTags((meta.hashtags ?? []).join(" "));
   }
 
@@ -138,12 +142,13 @@ export function PostDialog({
     if (!platforms.length) return setErr("Pick at least one place to post.");
     setBusy(when === "now" ? "post" : "queue");
     // TikTok's inbox upload carries no caption: have it ready to paste in the TikTok app
-    if (targets.tiktok) navigator.clipboard?.writeText(caption).catch(() => {});
+    if (targets.tiktok) navigator.clipboard?.writeText(ttCaption).catch(() => {});
     setErr(null);
     try {
       await saveClipMeta(clip.id, {
         youtube: { title, description, privacy },
         instagram: { caption },
+        tiktok: { caption: ttCaption },
         hashtags: tags.split(/[\s,]+/).filter(Boolean),
       });
       await publishClip(clip.id, platforms, when);
@@ -299,8 +304,8 @@ export function PostDialog({
               </fieldset>
               {targets.tiktok && (
                 <p className="mt-2 text-[14px] leading-snug text-ink-mute">
-                  TikTok gets the clip in your TikTok inbox. Open the notification in the TikTok app, paste the caption (PeakCut copies the Instagram caption
-                  when you post) and publish it there. TikTok allows 5 waiting uploads a day.
+                  TikTok gets the clip in your TikTok inbox. Open the notification in the TikTok app, paste the TikTok caption (PeakCut copies it when you
+                  post) and publish it there. TikTok allows 5 waiting uploads a day.
                 </p>
               )}
 
@@ -332,6 +337,27 @@ export function PostDialog({
                   <Field label="Instagram caption" count={`${caption.length}/2200`}>
                     <textarea value={caption} rows={8} maxLength={2200} onChange={(e) => setCaption(e.target.value)} className="field resize-y" />
                   </Field>
+                  <div>
+                    <Field label="TikTok caption" count={`${ttCaption.length}/2200`}>
+                      <textarea value={ttCaption} rows={4} maxLength={2200} onChange={(e) => setTtCaption(e.target.value)} className="field resize-y" />
+                    </Field>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigator.clipboard
+                          ?.writeText(ttCaption)
+                          .then(() => {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 1500);
+                          })
+                          .catch(() => setErr("Couldn't copy. Select the text and copy it yourself."))
+                      }
+                      className="btn btn-line btn-sm mt-2"
+                    >
+                      {copied ? <Check className="size-3.5" strokeWidth={2} /> : <Copy className="size-3.5" strokeWidth={1.75} />}
+                      {copied ? "Copied" : "Copy TikTok caption"}
+                    </button>
+                  </div>
                   <Field label="Hashtags" help="Also used as YouTube tags.">
                     <input value={tags} onChange={(e) => setTags(e.target.value)} className="field" placeholder="#gta6 #gtavi" />
                   </Field>

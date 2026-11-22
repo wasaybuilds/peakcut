@@ -1,7 +1,9 @@
-"""AI-written post text: YouTube title/description/tags and Instagram caption + hashtags.
+"""AI-written post text: YouTube title/description/tags, Instagram and TikTok captions + hashtags.
 
 Structure of clip.meta (same keys the publishers read):
-  {"hashtags": [...], "youtube": {"title", "description", "tags", "privacy"}, "instagram": {"caption"}}
+  {"hashtags": [...], "youtube": {"title", "description", "tags", "privacy"}, "instagram": {"caption"},
+   "tiktok": {"caption"}}
+TikTok's inbox upload carries no text, so its caption is copied for pasting in the TikTok app.
 """
 
 import json
@@ -56,7 +58,14 @@ def compose(title: str, ig_caption: str, tags: list[str], creator: str, source_u
             "privacy": privacy,
         },
         "instagram": {"caption": f"{ig_caption}\n\n🎥 {creator} (YouTube)\n.\n{' '.join(tags + ['#reels', '#gamingreels'])}"[:2200]},
+        "tiktok": {"caption": tiktok_caption(ig_caption, tags, creator)},
     }
+
+
+def tiktok_caption(hook: str, tags: list[str], creator: str) -> str:
+    """TikTok favours a short caption with a few focused hashtags over a long tag wall."""
+    picked = list(dict.fromkeys(tags[:4] + ["#fyp", "#gamingontiktok"]))  # tags are already normalised
+    return f"{hook}\n🎥 {creator}\n\n{' '.join(picked)}"[:2200]
 
 
 def _excerpt(words: list[dict], start: float, end: float, limit: int = 450) -> str:

@@ -117,9 +117,14 @@ class IGMeta(BaseModel):
     caption: str = Field(max_length=2200)
 
 
+class TTMeta(BaseModel):
+    caption: str = Field(max_length=2200)
+
+
 class MetaUpdate(BaseModel):
     youtube: YTMeta
     instagram: IGMeta
+    tiktok: TTMeta | None = None
     hashtags: list[str] = []
 
 
@@ -133,6 +138,8 @@ def update_meta(clip_id: int, body: MetaUpdate, session: Session = Depends(get_s
     meta["hashtags"] = tags
     meta["youtube"] = {**body.youtube.model_dump(), "tags": [t.lstrip("#") for t in tags]}
     meta["instagram"] = body.instagram.model_dump()
+    if body.tiktok:
+        meta["tiktok"] = body.tiktok.model_dump()
     clip.meta = meta
     session.add(clip)
     session.commit()

@@ -76,7 +76,16 @@ export type ClipMeta = {
   hashtags?: string[];
   youtube?: { title: string; description: string; tags?: string[]; privacy?: "public" | "unlisted" | "private" };
   instagram?: { caption: string };
+  tiktok?: { caption: string };
 };
+
+/** The saved TikTok caption, or one built from the Instagram hook and the top hashtags (clips made before TikTok). */
+export function tiktokCaption(meta: ClipMeta, title: string): string {
+  if (meta.tiktok?.caption) return meta.tiktok.caption;
+  const hook = (meta.instagram?.caption ?? title).split("\n\n")[0];
+  const tags = [...(meta.hashtags ?? []).slice(0, 4), "#fyp", "#gamingontiktok"];
+  return `${hook}\n\n${[...new Set(tags)].join(" ")}`;
+}
 
 export type PublishState = {
   id: number;
@@ -124,7 +133,12 @@ export const writeJobCaptions = (jobId: number) => req<{ ok: boolean }>(`/api/jo
 export const writeClipCaptions = (clipId: number) => req<ClipMeta>(`/api/clips/${clipId}/captions`, { method: "POST" });
 export const saveClipMeta = (
   clipId: number,
-  body: { youtube: { title: string; description: string; privacy: string }; instagram: { caption: string }; hashtags: string[] },
+  body: {
+    youtube: { title: string; description: string; privacy: string };
+    instagram: { caption: string };
+    tiktok?: { caption: string };
+    hashtags: string[];
+  },
 ) => req<ClipMeta>(`/api/clips/${clipId}/meta`, { method: "PUT", body: JSON.stringify(body) });
 export const makeCover = (clipId: number, body: { at?: number; text?: string } = {}) =>
   req<Cover>(`/api/clips/${clipId}/cover`, { method: "POST", body: JSON.stringify(body) });

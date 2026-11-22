@@ -20,6 +20,9 @@ def test_generate_uses_llm_text_and_builds_platform_fields(monkeypatch):
     tags_lower = [t.lower() for t in m["hashtags"]]
     assert "#gta6funny" in tags_lower and tags_lower.count("#gta6") == 1  # normalized + de-duplicated
     assert "gta6funny" in m["youtube"]["tags"]  # YouTube tags have no '#'
+    tt = m["tiktok"]["caption"]
+    assert tt.startswith("Wait for it 😭") and "#fyp" in tt
+    assert len([w for w in tt.split() if w.startswith("#")]) <= 6  # a few focused tags, not the full wall
 
 
 def test_generate_falls_back_when_llm_fails(monkeypatch):
