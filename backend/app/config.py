@@ -49,7 +49,10 @@ class Settings(BaseSettings):
     instagram_graph_version: str = "v23.0"
     tiktok_client_key: str = ""
     tiktok_client_secret: str = ""
-    tiktok_redirect_port: int = 8788  # register http://127.0.0.1:<port>/callback/ in the TikTok app
+    # register tiktok_redirect_uri as a Web redirect in the TikTok app; that page forwards the
+    # sign-in to the listener on 127.0.0.1:<tiktok_redirect_port> (TikTok rejects localhost redirects)
+    tiktok_redirect_uri: str = "https://wasaybuilds.github.io/peakcut/tiktok/"
+    tiktok_redirect_port: int = 8788
 
     # app
     api_port: int = 8000

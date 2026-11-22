@@ -204,15 +204,15 @@ export default function SettingsPage() {
           <Steps>
             <li>
               Log in to <A href="https://developers.tiktok.com/apps">TikTok for Developers</A> with your TikTok account and create an app. Use the PeakCut{" "}
-              <A href="https://wasaybuilds.github.io/peakcut/terms.html">terms</A> and <A href="https://wasaybuilds.github.io/peakcut/privacy.html">privacy</A>{" "}
-              pages, and tick the <b>Desktop</b> platform.
+              <A href="https://wasaybuilds.github.io/peakcut/terms/">terms</A> and <A href="https://wasaybuilds.github.io/peakcut/privacy/">privacy</A>{" "}
+              pages, and tick the <b>Web</b> platform.
             </li>
             <li>
               Add the products <b>Login Kit</b> and <b>Content Posting API</b>, with the scopes <b>user.info.basic</b> and <b>video.upload</b>. Leave Direct Post
               off.
             </li>
             <li>
-              In Login Kit, add the redirect URI <code className="rounded-[2px] bg-felt-high px-1.5 py-0.5 text-[15px] text-ink">{tt?.redirect_uri ?? "http://127.0.0.1:8788/callback/"}</code>.
+              In Login Kit, add the Web redirect URI <code className="rounded-[2px] bg-felt-high px-1.5 py-0.5 text-[15px] text-ink">{tt?.redirect_uri ?? "https://wasaybuilds.github.io/peakcut/tiktok/"}</code>.
             </li>
             <li>
               To test before TikTok reviews the app, open <b>Sandbox</b> and add your TikTok account as a target user. Otherwise submit the app for review.

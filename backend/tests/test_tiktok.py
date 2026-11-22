@@ -36,7 +36,7 @@ def test_pkce_is_hex_sha256_and_auth_url_has_the_documented_params(keys):
     q = parse_qs(urlparse(tiktok.auth_url("st", challenge)).query)
     assert q["client_key"] == ["ck_test"] and q["response_type"] == ["code"]
     assert q["scope"] == ["user.info.basic,video.upload"] and q["code_challenge_method"] == ["S256"]
-    assert q["redirect_uri"] == [f"http://127.0.0.1:{keys.tiktok_redirect_port}/callback/"]
+    assert q["redirect_uri"] == [keys.tiktok_redirect_uri] and keys.tiktok_redirect_uri.startswith("https://")
     assert "client_secret" not in q  # never in the browser URL
 
 

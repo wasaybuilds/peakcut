@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <base href="https://wasaybuilds.github.io/peakcut/">
+  <!--
+    TikTok sign-in redirect for PeakCut. TikTok's developer portal won't register a localhost
+    redirect, so TikTok sends the browser here and this page passes the result straight on to
+    PeakCut's sign-in listener on the same computer (127.0.0.1). Nothing is stored or sent anywhere
+    else. The port comes from the state PeakCut created ("<port>.<random>"); the host is fixed.
+  -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <title>PeakCut TikTok Sign-in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:opsz,wght@10..72,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <a class="logo" href="./" aria-label="PeakCut home"><span class="a">Peak</span><span class="b">Cut</span></a>
+  </header>
+  <h1>Finishing TikTok sign-in</h1>
+  <p id="msg">Handing you back to PeakCut on this computer.</p>
+  <p><a id="go" href="./">Continue to PeakCut</a></p>
+</main>
+<script>
+  (function () {
+    var q = location.search;
+    var go = document.getElementById("go");
+    if (!/[?&](code|error)=/.test(q)) {
+      document.getElementById("msg").textContent = "This page finishes a TikTok sign-in started from PeakCut. Open PeakCut and click Connect TikTok.";
+      go.hidden = true;
+      return;
+    }
+    var m = /[?&]state=(\d{2,5})\./.exec(q);
+    var target = "http://127.0.0.1:" + (m ? m[1] : "8788") + "/callback/" + q;
+    go.href = target;
+    document.getElementById("msg").textContent = "Handing you back to PeakCut on this computer. If nothing happens, make sure PeakCut is running and click the link below.";
+    location.replace(target);
+  })();
+</script>
+</body>
+</html>

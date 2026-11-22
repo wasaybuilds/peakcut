@@ -5,8 +5,8 @@ where the creator adds the caption and posts it (publicly if they like). This mo
 like Direct Post, which only allows private posts until TikTok audits the app, and TikTok doesn't
 approve Direct Post for personal upload tools anyway. Limit: 5 pending inbox uploads per 24 hours.
 
-Setup: a TikTok developer app with Login Kit (Desktop) and the Content Posting API, scopes
-user.info.basic and video.upload, and the redirect URI http://127.0.0.1:<port>/callback/. The
+Setup: a TikTok developer app with Login Kit (Web) and the Content Posting API, scopes
+user.info.basic and video.upload, and the Web redirect URI from redirect_uri(). The
 client key and secret go in .env (TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET), never in the repo.
 """
 
@@ -40,7 +40,12 @@ _connect_state = {"running": False, "error": None, "auth_url": None}
 
 
 def redirect_uri() -> str:
-    return f"http://127.0.0.1:{get_settings().tiktok_redirect_port}/callback/"  # desktop: localhost or 127.0.0.1; the form only takes the IP
+    """The redirect registered with TikTok (a Web redirect: the portal rejects localhost ones).
+
+    The default is the PeakCut site's /tiktok/ page, which forwards the browser to the sign-in
+    listener on 127.0.0.1:<tiktok_redirect_port>, reading the port from the state.
+    """
+    return get_settings().tiktok_redirect_uri
 
 
 def configured() -> bool:
@@ -143,7 +148,9 @@ def start_connect() -> None:
         server = oauth_local.make_server(get_settings().tiktok_redirect_port, host="127.0.0.1")
     except OSError as e:
         raise RuntimeError(f"Port {get_settings().tiktok_redirect_port} is busy, so TikTok can't redirect back: {e}") from e
-    state, (verifier, challenge) = secrets.token_urlsafe(24), _pkce()
+    # the redirect page reads the listener's port from the state: "<port>.<random>"
+    state = f"{get_settings().tiktok_redirect_port}.{secrets.token_urlsafe(24)}"
+    verifier, challenge = _pkce()
     url = auth_url(state, challenge)
     _connect_state.update(running=True, error=None, auth_url=url)
 
