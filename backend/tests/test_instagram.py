@@ -138,6 +138,8 @@ def test_publish_starts_over_when_meta_drops_the_upload(saved, tmp_path, monkeyp
     clip.write_bytes(b"x" * 10)
     graph = FakeGraph()
     monkeypatch.setattr(httpx, "Client", lambda **kw: graph)
+    waits = []
+    monkeypatch.setattr(instagram.time, "sleep", waits.append)
     uploads = []
 
     def flaky_upload(client, url, path, tok, size):
@@ -148,11 +150,14 @@ def test_publish_starts_over_when_meta_drops_the_upload(saved, tmp_path, monkeyp
     monkeypatch.setattr(instagram, "_upload", flaky_upload)
     assert instagram.publish(clip, "caption") == "https://www.instagram.com/reel/x/"
     assert [u.rsplit("/", 1)[1] for u in uploads] == ["c1", "c2"] and graph.published == ["c2"]
+    assert waits[:1] == [instagram.RETRY_WAIT]  # paused before starting over, not straight back in
 
     def always_fails(client, url, path, tok, size):
         raise RuntimeError('Instagram: {"debug_info":{"type":"ProcessingFailedError"}}')
 
     monkeypatch.setattr(instagram, "_upload", always_fails)
     monkeypatch.setattr(httpx, "Client", lambda **kw: FakeGraph(finishes=False))
+    waits.clear()
     with pytest.raises(RuntimeError, match="dropped the upload 3 times"):
         instagram.publish(clip, "caption")
+    assert waits == [instagram.RETRY_WAIT] * 2  # between tries only, none after the last

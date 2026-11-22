@@ -29,6 +29,7 @@ FB_GRAPH = "https://graph.facebook.com"
 RUPLOAD = "https://rupload.facebook.com/ig-api-upload"
 UPLOAD_CHUNK = 8_000_000
 UPLOAD_TRIES = 3  # Meta randomly drops the last piece of longer clips (ProcessingFailedError)
+RETRY_WAIT = 180  # seconds between tries: quick bursts of failed uploads get the account's API access blocked
 TOKEN = ROOT_DIR / "backend" / "tokens" / "instagram.json"
 REFRESH_AFTER = 7 * 24 * 3600
 
@@ -201,7 +202,9 @@ def publish(path: Path, caption: str, cover_at: float | None = None, progress=No
                     break
                 if attempt == UPLOAD_TRIES:
                     raise RuntimeError(f"Instagram dropped the upload {UPLOAD_TRIES} times (ProcessingFailedError). Try again later.") from e
-                log.warning("Instagram dropped the upload (try %d of %d); starting again", attempt, UPLOAD_TRIES)
+                log.warning("Instagram dropped the upload (try %d of %d); trying again in %d s",
+                            attempt, UPLOAD_TRIES, RETRY_WAIT)  # fmt: skip
+                time.sleep(RETRY_WAIT)
         if progress:
             progress(0.6)
 
