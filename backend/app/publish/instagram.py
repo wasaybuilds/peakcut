@@ -14,6 +14,7 @@ wait -> publish.
 """
 
 import json
+import logging
 import time
 from pathlib import Path
 
@@ -21,9 +22,13 @@ import httpx
 
 from app.config import ROOT_DIR, get_settings
 
+log = logging.getLogger(__name__)
+
 IG_GRAPH = "https://graph.instagram.com"
 FB_GRAPH = "https://graph.facebook.com"
 RUPLOAD = "https://rupload.facebook.com/ig-api-upload"
+UPLOAD_CHUNK = 8_000_000
+UPLOAD_TRIES = 3  # Meta randomly drops the last piece of longer clips (ProcessingFailedError)
 TOKEN = ROOT_DIR / "backend" / "tokens" / "instagram.json"
 REFRESH_AFTER = 7 * 24 * 3600
 
@@ -139,6 +144,28 @@ def status() -> dict:
         return {"connected": False, "username": data.get("username"), "error": str(e)}
 
 
+def _upload(client: httpx.Client, url: str, path: Path, tok: str, size: int) -> None:
+    """Send the file to rupload in UPLOAD_CHUNK pieces.
+
+    One big request fails on a slow uplink: a 28 MB clip at 0.6 MB/s ran 46 s and came back
+    ProcessingFailedError with nothing stored. Pieces work: rupload answers 206 for each partial
+    one, reports how much it holds, and answers 200 once the whole file is in.
+    """
+    auth = {"Authorization": f"OAuth {tok}", "file_size": str(size)}
+    offset = 0
+    with open(path, "rb") as f:
+        while True:
+            f.seek(offset)
+            r = client.post(url, content=f.read(UPLOAD_CHUNK), timeout=600, headers={**auth, "offset": str(offset)})
+            if r.status_code != 206:
+                _check(r)
+                return
+            held = int(client.get(url, headers={"Authorization": f"OAuth {tok}"}).json().get("offset") or 0)
+            if held <= offset:
+                raise RuntimeError("Instagram stopped taking the upload. Try posting again.")
+            offset = held
+
+
 def publish(path: Path, caption: str, cover_at: float | None = None, progress=None) -> str:
     """Post a Reel; returns its URL.
 
@@ -158,15 +185,23 @@ def publish(path: Path, caption: str, cover_at: float | None = None, progress=No
         }  # fmt: skip
         if cover_at is not None:
             params["thumb_offset"] = str(int(cover_at * 1000))  # milliseconds
-        c = _check(client.post(f"{graph}/{v}/{uid}/media", data=params))
-        container = c["id"]
-
-        # 2) upload the video file
-        with open(path, "rb") as f:
-            up = client.post(f"{RUPLOAD}/{v}/{container}", content=f.read(), timeout=600, headers={
-                "Authorization": f"OAuth {tok}", "offset": "0", "file_size": str(size),
-            })  # fmt: skip
-        _check(up)
+        # 2) upload the video file. Meta sometimes fails the last piece of a longer clip with
+        # ProcessingFailedError and keeps nothing; the same upload works on a later try, so start
+        # over with a fresh container. Unpublished containers are discarded by Instagram.
+        for attempt in range(1, UPLOAD_TRIES + 1):
+            container = _check(client.post(f"{graph}/{v}/{uid}/media", data=params))["id"]
+            try:
+                _upload(client, f"{RUPLOAD}/{v}/{container}", path, tok, size)
+                break
+            except RuntimeError as e:
+                if "ProcessingFailedError" not in str(e):
+                    raise
+                st = client.get(f"{graph}/{v}/{container}", params={"fields": "status_code", "access_token": tok}).json()
+                if st.get("status_code") == "FINISHED":  # it got there after all
+                    break
+                if attempt == UPLOAD_TRIES:
+                    raise RuntimeError(f"Instagram dropped the upload {UPLOAD_TRIES} times (ProcessingFailedError). Try again later.") from e
+                log.warning("Instagram dropped the upload (try %d of %d); starting again", attempt, UPLOAD_TRIES)
         if progress:
             progress(0.6)
 
